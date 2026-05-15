@@ -1,0 +1,294 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0d1a0d"/>
+      <stop offset="100%" stop-color="#050a05"/>
+    </radialGradient>
+
+    <filter id="glowGreen" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glowRed" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glowChip" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="2.5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Clip para waveform esquerda (antes do chip) -->
+    <clipPath id="waveLeftClip">
+      <rect x="40" y="100" width="148" height="312"/>
+    </clipPath>
+
+    <!-- Clip para waveform direita (após o chip — alterada) -->
+    <clipPath id="waveRightClip">
+      <rect x="324" y="100" width="148" height="312"/>
+    </clipPath>
+
+    <!-- Clip para interior do chip -->
+    <clipPath id="chipInteriorClip">
+      <rect x="192" y="148" width="128" height="216" rx="4"/>
+    </clipPath>
+  </defs>
+
+  <!-- Fundo -->
+  <rect width="512" height="512" fill="url(#bgGrad)"/>
+
+  <!-- ══════════════════════════════════════
+       WAVEFORM ESQUERDA — voz original
+       Forma de onda senoidal orgânica, alta amplitude
+       ══════════════════════════════════════ -->
+  <g clip-path="url(#waveLeftClip)" filter="url(#glowGreen)">
+
+    <!-- Linha central de referência (eixo zero) -->
+    <line x1="40" y1="256" x2="188" y2="256" stroke="#00ff44" stroke-width="1" opacity="0.15"/>
+
+    <!-- Waveform: path senoidal com amplitude variada (voz natural = irregular) -->
+    <path d="
+      M 40,256
+      C 52,256 54,192 66,192
+      C 78,192 78,320 90,320
+      C 102,320 102,172 114,172
+      C 126,172 126,340 138,340
+      C 150,340 150,184 162,184
+      C 174,184 174,328 186,328
+      L 188,256
+    " fill="none" stroke="#00ff44" stroke-width="3" opacity="0.95"/>
+
+    <!-- Segunda harmônica — voz tem overtones -->
+    <path d="
+      M 40,256
+      C 48,256 50,224 58,224
+      C 66,224 66,288 74,288
+      C 82,288 82,216 90,216
+      C 98,216 98,296 106,296
+      C 114,296 114,220 122,220
+      C 130,220 130,292 138,292
+      C 146,292 146,224 154,224
+      C 162,224 162,288 170,288
+      C 178,288 178,232 186,232
+      L 188,256
+    " fill="none" stroke="#00cc33" stroke-width="1.5" opacity="0.35"/>
+
+    <!-- Halo da waveform (área preenchida suave) -->
+    <path d="
+      M 40,256
+      C 52,256 54,192 66,192
+      C 78,192 78,320 90,320
+      C 102,320 102,172 114,172
+      C 126,172 126,340 138,340
+      C 150,340 150,184 162,184
+      C 174,184 174,328 186,328
+      L 188,256 L 188,256 L 40,256 Z
+    " fill="#00ff44" opacity="0.04"/>
+
+  </g>
+
+  <!-- Linha de entrada no chip (traço horizontal) -->
+  <line x1="188" y1="256" x2="196" y2="256"
+        stroke="#00ff44" stroke-width="2.5" opacity="0.8" filter="url(#glowGreen)"/>
+
+  <!-- ══════════════════════════════════════
+       CHIP — corpo do IC
+       Retângulo com pinos nas laterais
+       ══════════════════════════════════════ -->
+
+  <!-- Corpo do chip -->
+  <rect x="192" y="148" width="128" height="216" rx="6"
+        fill="#0a140a" stroke="#00ff44" stroke-width="2.5" opacity="0.95"
+        filter="url(#glowChip)"/>
+
+  <!-- Marca de orientação (círculo canto superior esquerdo — padrão IC) -->
+  <circle cx="208" cy="164" r="5" fill="none" stroke="#00ff44" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Pinos lado esquerdo (entrada) -->
+  <line x1="172" y1="176" x2="192" y2="176" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="196" x2="192" y2="196" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="216" x2="192" y2="216" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="236" x2="192" y2="236" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="256" x2="192" y2="256" stroke="#00ff44" stroke-width="2.5" opacity="0.9"/>
+  <line x1="172" y1="276" x2="192" y2="276" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="296" x2="192" y2="296" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="316" x2="192" y2="316" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="172" y1="336" x2="192" y2="336" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+
+  <!-- Pinos lado direito (saída) -->
+  <line x1="320" y1="176" x2="340" y2="176" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="196" x2="340" y2="196" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="216" x2="340" y2="216" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="236" x2="340" y2="236" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="256" x2="340" y2="256" stroke="#00ff44" stroke-width="2.5" opacity="0.9"/>
+  <line x1="320" y1="276" x2="340" y2="276" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="296" x2="340" y2="296" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="316" x2="340" y2="316" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+  <line x1="320" y1="336" x2="340" y2="336" stroke="#00ff44" stroke-width="2" opacity="0.7"/>
+
+  <!-- ══════════════════════════════════════
+       INTERIOR DO CHIP — rasura/glitch
+       O processamento acontece aqui
+       ══════════════════════════════════════ -->
+  <g clip-path="url(#chipInteriorClip)" filter="url(#glowRed)">
+
+    <!-- Linhas de estática — o DSP em ação -->
+    <line x1="192" y1="158" x2="320" y2="158" stroke="#ff2200" stroke-width="1.5" opacity="0.8"/>
+    <line x1="192" y1="165" x2="310" y2="165" stroke="#ff3300" stroke-width="1"   opacity="0.55"/>
+    <line x1="192" y1="172" x2="320" y2="172" stroke="#ff1100" stroke-width="2"   opacity="0.7"/>
+
+    <line x1="192" y1="184" x2="316" y2="184" stroke="#ff2200" stroke-width="1.5" opacity="0.85"/>
+    <line x1="192" y1="191" x2="304" y2="191" stroke="#ff4400" stroke-width="1"   opacity="0.5"/>
+    <line x1="192" y1="198" x2="320" y2="198" stroke="#ff1100" stroke-width="2.5" opacity="0.65"/>
+
+    <line x1="192" y1="210" x2="312" y2="210" stroke="#ff3300" stroke-width="2"   opacity="0.88"/>
+    <line x1="192" y1="218" x2="300" y2="218" stroke="#ff2200" stroke-width="1"   opacity="0.58"/>
+    <line x1="192" y1="226" x2="320" y2="226" stroke="#ff4400" stroke-width="1.5" opacity="0.72"/>
+
+    <line x1="192" y1="238" x2="318" y2="238" stroke="#ff1100" stroke-width="2.5" opacity="0.9"/>
+    <line x1="192" y1="246" x2="296" y2="246" stroke="#ff3300" stroke-width="1"   opacity="0.6"/>
+    <line x1="192" y1="254" x2="320" y2="254" stroke="#ff2200" stroke-width="3"   opacity="0.75"/>
+
+    <line x1="192" y1="262" x2="314" y2="262" stroke="#ff4400" stroke-width="1.5" opacity="0.85"/>
+    <line x1="192" y1="270" x2="302" y2="270" stroke="#ff1100" stroke-width="1"   opacity="0.55"/>
+    <line x1="192" y1="278" x2="320" y2="278" stroke="#ff3300" stroke-width="2"   opacity="0.78"/>
+
+    <line x1="192" y1="290" x2="310" y2="290" stroke="#ff2200" stroke-width="1.5" opacity="0.82"/>
+    <line x1="192" y1="298" x2="298" y2="298" stroke="#ff4400" stroke-width="1"   opacity="0.52"/>
+    <line x1="192" y1="306" x2="320" y2="306" stroke="#ff1100" stroke-width="2"   opacity="0.7"/>
+
+    <line x1="192" y1="318" x2="316" y2="318" stroke="#ff3300" stroke-width="2.5" opacity="0.86"/>
+    <line x1="192" y1="326" x2="300" y2="326" stroke="#ff2200" stroke-width="1"   opacity="0.56"/>
+    <line x1="192" y1="334" x2="320" y2="334" stroke="#ff4400" stroke-width="1.5" opacity="0.74"/>
+
+    <line x1="192" y1="346" x2="312" y2="346" stroke="#ff1100" stroke-width="2"   opacity="0.88"/>
+    <line x1="192" y1="354" x2="296" y2="354" stroke="#ff3300" stroke-width="1"   opacity="0.58"/>
+    <line x1="192" y1="358" x2="320" y2="358" stroke="#ff2200" stroke-width="1.5" opacity="0.66"/>
+
+    <!-- Blocos de glitch sólido -->
+    <rect x="210" y="200" width="40" height="5" fill="#ff3300" opacity="0.4"/>
+    <rect x="248" y="246" width="32" height="4" fill="#ff2200" opacity="0.35"/>
+    <rect x="220" y="296" width="50" height="6" fill="#ff4400" opacity="0.42"/>
+    <rect x="270" y="172" width="24" height="4" fill="#ff1100" opacity="0.3"/>
+
+    <!-- Waveform fragmentada dentro do chip (o sinal sendo destruído) -->
+    <path d="
+      M 196,256
+      L 208,256 L 210,230 L 212,256
+      L 218,256 L 220,280 L 228,220
+      L 232,256 L 238,256
+    " fill="none" stroke="#ff6600" stroke-width="1.5" opacity="0.5"/>
+
+  </g>
+
+  <!-- Label do chip (texto gravado no IC) -->
+  <text x="256" y="253"
+        font-family="'Courier New', Courier, monospace"
+        font-size="9" letter-spacing="1"
+        text-anchor="middle" fill="#00ff44" opacity="0.5">PF-DSP</text>
+  <text x="256" y="264"
+        font-family="'Courier New', Courier, monospace"
+        font-size="8" letter-spacing="1"
+        text-anchor="middle" fill="#00aa33" opacity="0.35">16kHz</text>
+
+  <!-- Linha de saída do chip -->
+  <line x1="320" y1="256" x2="328" y2="256"
+        stroke="#00ff44" stroke-width="2.5" opacity="0.8" filter="url(#glowGreen)"/>
+
+  <!-- ══════════════════════════════════════
+       WAVEFORM DIREITA — voz processada
+       Mesma amplitude mas forma alterada (pitch shifted)
+       ══════════════════════════════════════ -->
+  <g clip-path="url(#waveRightClip)" filter="url(#glowGreen)">
+
+    <line x1="324" y1="256" x2="472" y2="256" stroke="#00ff44" stroke-width="1" opacity="0.15"/>
+
+    <!-- Waveform alterada: frequência levemente diferente, amplitude similar mas não idêntica -->
+    <path d="
+      M 324,256
+      C 334,256 336,200 346,200
+      C 356,200 356,312 366,312
+      C 376,312 376,188 386,188
+      C 396,188 396,324 406,324
+      C 416,324 416,196 426,196
+      C 436,196 436,316 446,316
+      C 456,316 456,208 466,208
+      L 472,256
+    " fill="none" stroke="#00ff44" stroke-width="3" opacity="0.88"/>
+
+    <!-- Segunda harmônica alterada -->
+    <path d="
+      M 324,256
+      C 332,256 334,228 342,228
+      C 350,228 350,284 358,284
+      C 366,284 366,220 374,220
+      C 382,220 382,292 390,292
+      C 398,292 398,224 406,224
+      C 414,224 414,288 422,288
+      C 430,288 430,228 438,228
+      C 446,228 446,284 454,284
+      C 462,284 462,236 470,236
+      L 472,256
+    " fill="none" stroke="#00cc33" stroke-width="1.5" opacity="0.28"/>
+
+    <path d="
+      M 324,256
+      C 334,256 336,200 346,200
+      C 356,200 356,312 366,312
+      C 376,312 376,188 386,188
+      C 396,188 396,324 406,324
+      C 416,324 416,196 426,196
+      C 436,196 436,316 446,316
+      C 456,316 456,208 466,208
+      L 472,256 L 472,256 L 324,256 Z
+    " fill="#00ff44" opacity="0.03"/>
+
+  </g>
+
+  <!-- Cantos bracket (mesma linguagem do ícone original) -->
+  <path d="M40,130 L40,100 L70,100"   fill="none" stroke="#00ff44" stroke-width="2.5" opacity="0.6"/>
+  <path d="M442,100 L472,100 L472,130" fill="none" stroke="#00ff44" stroke-width="2.5" opacity="0.6"/>
+  <path d="M40,382 L40,412 L70,412"   fill="none" stroke="#00ff44" stroke-width="2.5" opacity="0.6"/>
+  <path d="M442,412 L472,412 L472,382" fill="none" stroke="#00ff44" stroke-width="2.5" opacity="0.6"/>
+
+  <!-- Labels -->
+  <text x="114" y="432"
+        font-family="'Courier New', Courier, monospace"
+        font-size="9" letter-spacing="1"
+        text-anchor="middle" fill="#00aa33" opacity="0.45">ORIGINAL</text>
+
+  <text x="398" y="432"
+        font-family="'Courier New', Courier, monospace"
+        font-size="9" letter-spacing="1"
+        text-anchor="middle" fill="#00aa33" opacity="0.45">OBFUSCATED</text>
+
+  <text x="256" y="460"
+        font-family="'Courier New', Courier, monospace"
+        font-size="20" font-weight="bold" letter-spacing="3"
+        text-anchor="middle" fill="#00ff44" opacity="0.85"
+        filter="url(#glowGreen)">PHONEMEFREE</text>
+
+  <text x="256" y="480"
+        font-family="'Courier New', Courier, monospace"
+        font-size="12" letter-spacing="4"
+        text-anchor="middle" fill="#00aa33" opacity="0.6">UNPLUGGED</text>
+
+  <!-- Cursor -->
+  <rect x="394" y="466" width="9" height="16" fill="#00ff44" opacity="0.7">
+    <animate attributeName="opacity" values="0.7;0;0.7" dur="1.2s" repeatCount="indefinite"/>
+  </rect>
+
+</svg>
