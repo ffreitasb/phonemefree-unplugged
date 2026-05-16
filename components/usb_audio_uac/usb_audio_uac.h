@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #include "esp_err.h"
 
 #define PHONEMEFREE_UNPLUGGED_USB_VID 0x303A
@@ -8,6 +11,14 @@
 #define PHONEMEFREE_UNPLUGGED_USB_PRODUCT "PhonemeFree Unplugged Mic"
 #define PHONEMEFREE_UNPLUGGED_USB_SERIAL "001"
 
+typedef struct {
+    uint32_t packets_written;
+    uint32_t underruns;
+    uint32_t short_writes;
+    bool mounted;
+} usb_audio_uac_stats_t;
+
 esp_err_t usb_audio_uac_init(void);
 esp_err_t usb_audio_uac_start(void);
 void usb_audio_uac_stop(void);
+void usb_audio_uac_get_stats(usb_audio_uac_stats_t *stats);

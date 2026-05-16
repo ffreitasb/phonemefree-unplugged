@@ -35,6 +35,11 @@ menu "PhonemeFree Unplugged"
         default 8192
         range 4096 32768
 
+    config PHONEMEFREE_UNPLUGGED_I2S_TASK_STACK_SIZE
+        int "I2S capture task stack size"
+        default 4096
+        range 2048 16384
+
     config PHONEMEFREE_UNPLUGGED_USB_TASK_STACK_SIZE
         int "USB task stack size"
         default 4096

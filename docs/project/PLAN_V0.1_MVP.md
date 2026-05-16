@@ -4,7 +4,7 @@ Este documento transforma o PRD v2.0 em um plano executavel para a v0.1 funciona
 
 ## 0. Status atual
 
-Marco atual: etapa de planejamento, organizacao publica do repositorio e definicao de hardware v0.1 concluida.
+Marco atual: planejamento/hardware v0.1 concluidos e firmware ESP-IDF em desenvolvimento ativo.
 
 Concluido nesta primeira etapa:
 
@@ -52,19 +52,59 @@ Concluido nesta etapa de firmware inicial:
 - `idf.py build` validado via EIM; binario gerado em `build/phonemefree-unplugged.bin`.
 - Dependencia USB alinhada ao fluxo nativo do ESP-IDF v6 com `espressif/esp_tinyusb`, mantendo TinyUSB como base transitiva.
 
-Ainda nao iniciado:
+Concluido nesta etapa de firmware core:
 
-- Implementacao real de I2S DMA.
-- Implementacao real de USB Audio UAC.
-- Task DSP Core 1.
+- Configuracoes `CONFIG_PHONEMEFREE_UNPLUGGED_*` movidas para componente compartilhado `components/phonemefree_config/`, permitindo reuso pelo app principal e pelo app de testes.
+- App de testes Unity criado em `test_apps/firmware_core/`.
+- `hal_ringbuf` validado por testes de inicializacao idempotente e fluxo basico de PCM.
+- `dsp_noise` validado por testes deterministas, nivel zero, nivel saturado e mix 50%.
+- `dsp_engine` ganhou teste de reset dos parametros atomicos e estatisticas.
+- `hal_i2s` deixou de ser stub:
+  - configura I2S STD RX em 16 kHz;
+  - usa frames de 32 bits no slot esquerdo;
+  - converte INMP441-style 24-bit-left-aligned para PCM 16-bit;
+  - envia blocos ao ring buffer de entrada sem bloquear;
+  - contabiliza capturas, timeouts, erros e drops.
+- `dsp_engine` deixou de ser stub:
+  - task fixada no Core 1 em builds dual-core;
+  - consome `s_audio_ringbuf`;
+  - aplica bypass, `dsp_pitch_process` scaffold e `dsp_noise_mix`;
+  - escreve em `s_dsp_output_buf` sem bloquear;
+  - contabiliza amostras processadas, underflows e drops.
+- `app_main` passou a inicializar e iniciar ring buffers, I2S, DSP, USB Audio, Wi-Fi scaffold e webserver scaffold.
+- Build do app principal validado via EIM/ESP-IDF v6.0.1.
+- Build do app Unity `test_apps/firmware_core` validado via EIM/ESP-IDF v6.0.1.
+
+Concluido nesta etapa de firmware USB inicial:
+
+- `usb_audio_uac` deixou de ser stub:
+  - instala TinyUSB via `espressif/esp_tinyusb`;
+  - define descriptor de dispositivo com VID `0x303A`, PID `0x4001`, manufacturer e product do projeto;
+  - define configuracao UAC2 mono 16 kHz / 16-bit usando endpoint isocrono IN;
+  - implementa callbacks de controle UAC para mute, volume, clock source e terminal connector;
+  - cria task alimentadora no Core 0;
+  - consome pacotes de 16 amostras / 1 ms de `s_dsp_output_buf`;
+  - preenche underrun com silencio;
+  - contabiliza pacotes escritos, underruns, short writes e estado de montagem.
+- `CONFIG_FREERTOS_HZ=1000` foi adicionado aos defaults para builds limpos sustentarem tick de 1 ms.
+- Build do app principal validado novamente com USB Audio real.
+- Build do app Unity `test_apps/firmware_core` validado novamente apos a mudanca.
+
+Ainda nao iniciado ou ainda scaffold:
+
 - Wi-Fi AP real.
 - Webserver/captive portal real.
-- Testes Unity.
 - Flash e monitor em hardware.
+
+Pendente de validacao em bancada:
+
+- Captura I2S real com INMP441 fisico.
+- Qualidade da conversao 32-bit I2S -> PCM 16-bit.
+- Estabilidade das tasks de audio sob carga de Wi-Fi/USB.
 
 Proximo passo aprovado:
 
-- Iniciar `hal_ringbuf`/`dsp_noise` com testes e, em seguida, partir para I2S RX real.
+- Fazer bring-up em hardware: flash, logs de boot, enumeracao USB como microfone no host e captura I2S real do INMP441.
 
 ## 1. Objetivo da v0.1
 
@@ -151,14 +191,14 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 
 - Componente `usb_audio_uac`.
 - TinyUSB habilitado para Audio IN.
-- Descriptor UAC 1.0 conforme PRD:
+- Descriptor UAC inicial baseado no helper UAC2 do TinyUSB:
   - VID `0x303A`;
   - PID `0x4001`;
   - manufacturer `PhonemeFree Unplugged`;
   - product `PhonemeFree Unplugged Mic`;
   - serial `001`;
   - PCM mono 16 kHz / 16-bit.
-- Callback isocrono consumindo 16 amostras por frame USB de 1 ms.
+- Task de alimentacao USB consumindo 16 amostras por frame USB de 1 ms.
 - Fallback seguro para underrun: preencher silencio e contabilizar contador de underrun.
 
 ### Wi-Fi AP e portal
@@ -244,6 +284,7 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 7. Todo codigo chamado no hot path deve evitar heap, locks e logs verbosos.
 8. O firmware v0.1 deve mirar primeiro o reference build documentado; XIAO, Waveshare e SuperMini sao compatibilidade posterior/best-effort.
 9. O fluxo de desenvolvimento e ESP-IDF primeiro; binarios e instalador web ficam para empacotamento de release.
+10. A implementacao USB inicial usa UAC2 porque o helper de descriptor disponivel no TinyUSB/ESP-IDF v6.0.1 e UAC2. A meta de compatibilidade do PRD continua registrada; a decisao final entre manter UAC2 ou implementar descriptor UAC1 manual depende da validacao em host real.
 
 ## 6. Arquitetura alvo da v0.1
 
@@ -257,7 +298,7 @@ INMP441
   -> dsp_pitch_process
   -> dsp_noise_mix
   -> s_dsp_output_buf
-  -> TinyUSB UAC callback
+  -> TinyUSB UAC feeder task
   -> USB host
 ```
 
@@ -530,20 +571,19 @@ Entregaveis:
 - `components/usb_audio_uac/usb_audio_uac.h`.
 - `components/usb_audio_uac/usb_audio_uac.c`.
 - Descriptors TinyUSB.
-- Callback de carga do endpoint IN.
+- Task de alimentacao do endpoint IN.
 - Teste de enumeracao em host.
 
 Tarefas:
 
-1. Configurar TinyUSB no build.
-2. Definir descriptors UAC 1.0.
-3. Implementar init USB.
-4. Implementar task USB Core 0 prioridade 5.
-5. Implementar callback `tud_audio_tx_done_pre_load_cb`.
-6. Consumir exatamente 16 amostras por frame de 1 ms.
-7. Em underrun, enviar silencio.
-8. Expor contadores de diagnostico.
-9. Testar enumeracao:
+1. Configurar TinyUSB no build. Status: concluido.
+2. Definir descriptor UAC inicial. Status: concluido com UAC2 helper do TinyUSB; UAC1 manual depende de validacao de compatibilidade.
+3. Implementar init USB. Status: concluido.
+4. Implementar task USB Core 0. Status: concluido.
+5. Consumir exatamente 16 amostras por frame de 1 ms. Status: concluido.
+6. Em underrun, enviar silencio. Status: concluido.
+7. Expor contadores de diagnostico. Status: concluido.
+8. Testar enumeracao:
    - Windows 11;
    - Linux quando disponivel;
    - Android quando disponivel.
@@ -748,7 +788,7 @@ Observacao: esta ordem antecipa `dsp_noise` antes de `dsp_pitch` para viabilizar
 
 - Firmware ESP-IDF compilavel.
 - Estrutura completa de componentes.
-- USB microphone UAC 1.0 funcional.
+- USB microphone UAC funcional, com perfil final UAC1/UAC2 decidido apos validacao em host.
 - Captura I2S funcional.
 - Pipeline DSP com bypass, pitch e noise.
 - Portal Wi-Fi offline.
@@ -899,21 +939,22 @@ Esses dados podem aparecer inicialmente em log e depois em `/api/status`.
 ## 15. Plano de versionamento sugerido
 
 - `v0.1.0-dev.1`: scaffold compila. Status: concluido localmente.
-- `v0.1.0-dev.2`: ringbuf + noise + testes.
-- `v0.1.0-dev.3`: USB enumera e envia silencio/test tone.
-- `v0.1.0-dev.4`: I2S captura audio.
-- `v0.1.0-dev.5`: I2S -> DSP -> USB.
+- `v0.1.0-dev.2`: ringbuf + noise + testes. Status: concluido.
+- `v0.1.0-dev.3`: I2S + DSP task + USB Audio feeder compilando. Status: concluido em build; pendente enumeracao em hardware.
+- `v0.1.0-dev.4`: I2S captura audio em bancada.
+- `v0.1.0-dev.5`: I2S -> DSP -> USB validado em host.
 - `v0.1.0-dev.6`: Wi-Fi AP + portal.
 - `v0.1.0-dev.7`: WebSocket controla DSP.
 - `v0.1.0`: MVP funcional validado em bancada.
 
 ## 16. Primeiro proximo passo recomendado
 
-Fase 1 concluida. Seguir pela Fase 2:
+Fases 1, 2, 3, 4, 6 e parte da 7 estao compilando. Seguir pelo bring-up em hardware:
 
-1. Consolidar `hal_ringbuf` com teste Unity.
-2. Consolidar `dsp_noise` deterministico com teste Unity.
-3. Medir custo por bloco do caminho DSP minimo.
-4. Preparar `hal_i2s` real para captura do INMP441.
+1. Flashar o firmware no ESP32-S3 reference build.
+2. Confirmar logs de boot, init I2S, DSP e TinyUSB.
+3. Validar enumeracao como microfone no host.
+4. Validar captura real do INMP441 e contadores de underrun/drop.
+5. Ajustar descriptor UAC, pinagem ou timing conforme evidencia de bancada.
 
-Isso preserva a base compilavel enquanto transforma os primeiros stubs em comportamento real.
+Isso transforma a base compilavel em evidencia fisica antes de aprofundar Wi-Fi, captive portal e GUI.

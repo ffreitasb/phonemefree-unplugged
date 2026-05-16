@@ -114,10 +114,10 @@ Generated local files that should stay untracked:
 
 ## Next Implementation Bias
 
-After the scaffold, prioritize:
+Current firmware core builds with I2S capture, DSP task, and an initial TinyUSB UAC2 microphone feeder. Next, prioritize:
 
-1. `hal_ringbuf` correctness and tests.
-2. `dsp_noise` deterministic behavior and tests.
-3. I2S capture from the INMP441 reference build.
-4. USB enumeration with silence/test tone.
-5. End-to-end `I2S -> DSP -> USB`.
+1. Flash and serial monitor on the reference ESP32-S3 board.
+2. Host validation of USB microphone enumeration and UAC2 compatibility.
+3. Hardware bring-up of INMP441 I2S capture on GPIO4/5/6.
+4. End-to-end `I2S -> DSP -> USB` audio validation.
+5. Wi-Fi AP, captive portal, and portal controls writing `g_dsp_params` with `atomic_store`.

@@ -4,6 +4,7 @@ idf_component_register(
     REQUIRES
         esp_common
         log
+        hal_i2s
         hal_ringbuf
         dsp_engine
         usb_audio_uac

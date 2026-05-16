@@ -124,7 +124,7 @@ Core firmware map:
 | I2S input | `components/hal_i2s/` | Microphone capture and PCM conversion |
 | Ring buffers | `components/hal_ringbuf/` | Shared ESP-IDF ring buffer instances |
 | DSP | `components/dsp_*` | Pitch, noise, optional formant, engine task |
-| USB audio | `components/usb_audio_uac/` | TinyUSB UAC 1.0 microphone |
+| USB audio | `components/usb_audio_uac/` | TinyUSB UAC microphone, currently UAC2 pending host validation |
 | Wi-Fi AP | `components/wifi_ap/` | Offline access point and DNS captive portal |
 | Portal | `components/webserver_portal/` | `esp_http_server`, WebSocket, status API |
 | UI assets | `data/` | LittleFS-hosted `index.html` |

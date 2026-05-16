@@ -2,7 +2,12 @@
 
 #include "esp_attr.h"
 
-static uint32_t s_lfsr_state = 0xACE1u;
+static uint32_t s_lfsr_state = DSP_NOISE_DEFAULT_SEED;
+
+void dsp_noise_reset(uint32_t seed)
+{
+    s_lfsr_state = seed ? seed : DSP_NOISE_DEFAULT_SEED;
+}
 
 IRAM_ATTR static inline int16_t lfsr_next_sample(void)
 {
