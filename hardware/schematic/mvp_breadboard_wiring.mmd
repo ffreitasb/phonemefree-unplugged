@@ -1,0 +1,18 @@
+flowchart LR
+    HOST["USB host<br/>PC / phone / tablet"]
+    USB["USB data cable<br/>native ESP32-S3 USB"]
+    MCU["ESP32-S3 dev board<br/>WROOM / XIAO / compact S3"]
+    MIC["I2S MEMS microphone<br/>INMP441 module"]
+
+    HOST <--> USB
+    USB <--> MCU
+
+    MCU -- "3V3" --> MIC
+    MCU -- "GND" --> MIC
+    MCU -- "GPIO4 / I2S BCLK" --> MIC
+    MCU -- "GPIO5 / I2S WS" --> MIC
+    MIC -- "SD / DOUT -> GPIO6" --> MCU
+    MCU -- "GND or 3V3<br/>L/R select" --> MIC
+
+    note1["Keep BCLK / WS / DATA short.<br/>Do not use GPIO19/20 for the microphone.<br/>GPIO19/20 are native USB D-/D+."]
+    note1 -.-> MCU

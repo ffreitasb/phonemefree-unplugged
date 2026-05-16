@@ -1,0 +1,28 @@
+flowchart LR
+    USBC["USB-C receptacle<br/>Device / UFP only"]
+    PROT["USB ESD + optional series resistors"]
+    PWR["5V -> 3V3 regulator<br/>bulk + decoupling"]
+    MCU["ESP32-S3 module<br/>WROOM-1 / WROOM-1U / compact S3"]
+    MICPWR["Filtered mic 3V3<br/>0R/ferrite option"]
+    MIC["I2S MEMS microphone<br/>bottom-port"]
+    BOOT["BOOT + RESET<br/>debug access"]
+    UART["UART/test pads<br/>3V3/GND/TX/RX"]
+    LED["Status LED<br/>optional"]
+
+    USBC -- "D+ / D-" --> PROT
+    PROT -- "GPIO20 D+<br/>GPIO19 D-" --> MCU
+    USBC -- "VBUS 5V" --> PWR
+    PWR -- "3V3" --> MCU
+    PWR -- "3V3" --> MICPWR
+    MICPWR -- "quiet 3V3" --> MIC
+    MCU -- "I2S BCLK / WS" --> MIC
+    MIC -- "I2S DATA" --> MCU
+    BOOT --> MCU
+    UART --> MCU
+    MCU --> LED
+
+    cc["USB-C CC1/CC2:<br/>5.1k Rd to GND"]
+    cc -.-> USBC
+
+    mech["Mechanical:<br/>mic port + gasket + enclosure opening"]
+    mech -.-> MIC
