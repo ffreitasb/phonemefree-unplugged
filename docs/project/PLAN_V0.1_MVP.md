@@ -108,6 +108,20 @@ Concluido nesta etapa de portal inicial:
 - Build do app principal validado com `littlefs.bin` gerado.
 - Build do app Unity `test_apps/firmware_core` validado novamente apos adicionar dependencia LittleFS.
 
+Concluido nesta etapa de licenciamento inicial:
+
+- Modelo dual definido e documentado:
+  - hardware e documentacao publica de hardware sob `CERN-OHL-S-2.0`;
+  - firmware, UI embarcada, testes, ferramentas e documentacao de firmware/projeto sob `AGPL-3.0-or-later`.
+- Textos completos adicionados em `LICENSES/`.
+- Politica raiz adicionada em `LICENSE.md`.
+- Guias adicionados em `docs/legal/` para:
+  - escopo por diretorio;
+  - licencas de terceiros;
+  - checklist de compliance para releases;
+  - politica de marca e forks.
+- `AGENTS.md`, `README.md`, `docs/README.md`, `hardware/README.md` e `docs/hardware/README.md` atualizados para refletir o modelo.
+
 Ainda nao iniciado ou ainda scaffold:
 
 - Captive DNS redirect real.

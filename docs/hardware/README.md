@@ -10,3 +10,9 @@ Public hardware-facing documentation.
 | [SCHEMATIC_CONCEPT.md](SCHEMATIC_CONCEPT.md) | Conceptual schematic, diagrams, net list, and PCB block direction. |
 
 Detailed design files, KiCad projects, mechanical drawings, and manufacturing exports belong under the top-level `hardware/` directory. Full KiCad/PCB work is intentionally deferred to v0.2.
+
+## License
+
+Public hardware documentation in this directory is part of the hardware source package and is licensed under `CERN-OHL-S-2.0`, unless a file says otherwise.
+
+See [../../LICENSE.md](../../LICENSE.md).

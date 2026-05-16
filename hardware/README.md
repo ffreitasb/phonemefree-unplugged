@@ -12,3 +12,9 @@ Hardware design and assembly material lives here.
 | `manufacturing/` | Future Gerbers, BOM exports, pick-and-place files, and fabrication packages. |
 
 The first public build is expected to start on breadboard, then move to double-sided 2.54 mm perfboard before any custom PCB.
+
+## License
+
+Hardware source in this directory is licensed under `CERN-OHL-S-2.0`, unless a file says otherwise.
+
+See [LICENSE.md](LICENSE.md) and [../LICENSE.md](../LICENSE.md).

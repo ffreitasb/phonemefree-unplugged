@@ -75,6 +75,16 @@ Expected component map:
 - Bluetooth headset or Bluetooth microphone connectivity is discarded by design and ESP32-S3 hardware limitations. It is not in the implementation pipeline.
 - KiCad, custom PCB, production schematics, and manufacturing files are v0.2+ work, not v0.1 blockers.
 
+## Licensing Model
+
+- Treat `LICENSE.md` and `docs/legal/` as the licensing source of truth.
+- Hardware source, hardware diagrams, PCB/schematic/mechanical/manufacturing files, and public hardware build documentation use `CERN-OHL-S-2.0`.
+- Firmware, embedded web UI, tests, tools, build files, firmware docs, and project docs use `AGPL-3.0-or-later`.
+- Third-party files keep their upstream notices; do not replace dependency license headers with project headers.
+- New project-authored firmware/software files should carry `SPDX-License-Identifier: AGPL-3.0-or-later`.
+- New project-authored hardware source files should carry `SPDX-License-Identifier: CERN-OHL-S-2.0`.
+- Project branding is reserved. The open licenses do not grant trademark rights for the `PhonemeFree` or `PhonemeFree Unplugged` names/logos.
+
 ## Local Toolchain
 
 Validated Windows setup:

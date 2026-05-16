@@ -17,6 +17,8 @@
 [![Audio](https://img.shields.io/badge/audio-16kHz%20mono%2016--bit-00aa88)](#hardware-target)
 [![Offline](https://img.shields.io/badge/network-air--gapped-111111)](#security-and-privacy)
 [![Plan](https://img.shields.io/badge/status-v0.1%20planning-blue)](docs/project/PLAN_V0.1_MVP.md)
+[![Firmware License](https://img.shields.io/badge/firmware-AGPL--3.0--or--later-663399)](LICENSE.md)
+[![Hardware License](https://img.shields.io/badge/hardware-CERN--OHL--S--2.0-0b7285)](LICENSE.md)
 
 </div>
 
@@ -137,6 +139,7 @@ Core firmware map:
 | [docs/project/](docs/project/) | Planning, roadmap, and release scope. |
 | [docs/hardware/](docs/hardware/) | Public hardware BoMs, sourcing notes, and assembly references. |
 | [docs/firmware/](docs/firmware/) | Firmware architecture and implementation notes. |
+| [docs/legal/](docs/legal/) | Licensing model, release compliance, third-party notices, and branding policy. |
 | [hardware/](hardware/) | Hardware build material, from breadboard through future PCB work. |
 | [hardware/schematic/](hardware/schematic/) | Conceptual schematic diagrams and future schematic sources. |
 | [hardware/breadboard/](hardware/breadboard/) | Temporary first-pass wiring and bring-up notes. |
@@ -194,6 +197,11 @@ See `docs/firmware/ESP_IDF_SETUP.md` for local setup notes.
 | [docs/hardware/BRINGUP_CHECKLIST.md](docs/hardware/BRINGUP_CHECKLIST.md) | Bench checklist for validating hardware before firmware debugging. |
 | [docs/hardware/SCHEMATIC_CONCEPT.md](docs/hardware/SCHEMATIC_CONCEPT.md) | Conceptual schematic, wiring diagrams, and PCB block direction. |
 | [docs/project/PLAN_V0.1_MVP.md](docs/project/PLAN_V0.1_MVP.md) | Granular plan from repository setup to first firmware MVP. |
+| [LICENSE.md](LICENSE.md) | Dual-license policy for firmware/software and hardware design files. |
+| [docs/legal/README.md](docs/legal/README.md) | Licensing scope, compliance notes, contribution guidance, and release obligations. |
+| [docs/legal/THIRD_PARTY_LICENSES.md](docs/legal/THIRD_PARTY_LICENSES.md) | Current third-party dependency license notice policy. |
+| [docs/legal/BRANDING_POLICY.md](docs/legal/BRANDING_POLICY.md) | Project name, logo, and fork branding guidance. |
+| [docs/legal/RELEASE_COMPLIANCE.md](docs/legal/RELEASE_COMPLIANCE.md) | Pre-release checklist for firmware binaries and hardware packages. |
 | [docs/README.md](docs/README.md) | Documentation directory map. |
 | [hardware/README.md](hardware/README.md) | Hardware directory map. |
 | [assets/README.md](assets/README.md) | Assets directory map. |
@@ -202,6 +210,17 @@ See `docs/firmware/ESP_IDF_SETUP.md` for local setup notes.
 | [README.md](README.md) | Project overview, status, and development map. |
 
 More project documents will be added as the firmware takes shape.
+
+## License
+
+PhonemeFree Unplugged uses a dual-license model:
+
+- Hardware design source, PCB files, schematic files, enclosure/mechanical files, manufacturing exports, and hardware build documentation are licensed under `CERN-OHL-S-2.0`.
+- Firmware source code, embedded web UI, build files, tests, tooling, and firmware/project documentation are licensed under `AGPL-3.0-or-later`.
+
+See [LICENSE.md](LICENSE.md) and [docs/legal/](docs/legal/) for the full policy. Third-party dependencies keep their own upstream licenses.
+
+The `PhonemeFree` and `PhonemeFree Unplugged` names, logos, icons, and visual identity are project branding. The open source and open hardware licenses do not grant trademark rights or permission to present modified products as official.
 
 ## Security And Privacy
 
