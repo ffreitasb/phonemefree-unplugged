@@ -1,0 +1,57 @@
+menu "PhonemeFree Unplugged"
+
+    config PHONEMEFREE_UNPLUGGED_I2S_BCK_PIN
+        int "I2S BCK GPIO"
+        default 4
+        range 0 48
+
+    config PHONEMEFREE_UNPLUGGED_I2S_WS_PIN
+        int "I2S WS GPIO"
+        default 5
+        range 0 48
+
+    config PHONEMEFREE_UNPLUGGED_I2S_DATA_PIN
+        int "I2S DATA GPIO"
+        default 6
+        range 0 48
+
+    config PHONEMEFREE_UNPLUGGED_I2S_PORT
+        int "I2S port number"
+        default 0
+        range 0 1
+
+    config PHONEMEFREE_UNPLUGGED_RINGBUF_SAMPLES
+        int "Input audio ring buffer samples"
+        default 512
+        range 64 4096
+
+    config PHONEMEFREE_UNPLUGGED_DSP_OUTPUT_SAMPLES
+        int "DSP output ring buffer samples"
+        default 64
+        range 16 1024
+
+    config PHONEMEFREE_UNPLUGGED_DSP_TASK_STACK_SIZE
+        int "DSP task stack size"
+        default 8192
+        range 4096 32768
+
+    config PHONEMEFREE_UNPLUGGED_USB_TASK_STACK_SIZE
+        int "USB task stack size"
+        default 4096
+        range 2048 16384
+
+    config PHONEMEFREE_UNPLUGGED_WIFI_TASK_STACK_SIZE
+        int "Wi-Fi task stack size"
+        default 4096
+        range 2048 16384
+
+    config PHONEMEFREE_UNPLUGGED_WEBSERVER_TASK_STACK_SIZE
+        int "Webserver task stack size"
+        default 6144
+        range 4096 32768
+
+    config PHONEMEFREE_UNPLUGGED_FORMANT_ENABLE
+        bool "Enable experimental formant shift"
+        default n
+
+endmenu

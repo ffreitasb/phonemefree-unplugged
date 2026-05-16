@@ -26,16 +26,45 @@ Concluido nesta primeira etapa:
 - KiCad, PCB custom, diagramas completos de producao e manufacturing package foram explicitamente adiados para v0.2.
 - Binarios de release e instalador web via browser foram registrados como etapa de empacotamento/lancamento, nao como bloqueio do desenvolvimento inicial.
 
-Nao iniciado ainda:
+Concluido nesta etapa de firmware inicial:
 
-- Scaffold ESP-IDF.
-- Codigo de firmware.
+- ESP-IDF v6.0.1 instalado localmente via Espressif Installation Manager CLI.
+- Scaffold ESP-IDF criado na raiz:
+  - `CMakeLists.txt`;
+  - `main/`;
+  - `components/`;
+  - `data/`;
+  - `partitions.csv`;
+  - `sdkconfig.defaults`.
+- Componentes base criados com interfaces do PRD:
+  - `hal_i2s`;
+  - `hal_ringbuf`;
+  - `dsp_noise`;
+  - `dsp_pitch`;
+  - `dsp_formant`;
+  - `dsp_engine`;
+  - `usb_audio_uac`;
+  - `wifi_ap`;
+  - `webserver_portal`.
+- `data/index.html` inicial criado para futura particao LittleFS.
+- Notas de setup ESP-IDF criadas em `docs/firmware/ESP_IDF_SETUP.md`.
+- `idf.py set-target esp32s3` validado via EIM.
+- `idf.py build` validado via EIM; binario gerado em `build/phonemefree-unplugged.bin`.
+- Dependencia USB alinhada ao fluxo nativo do ESP-IDF v6 com `espressif/esp_tinyusb`, mantendo TinyUSB como base transitiva.
+
+Ainda nao iniciado:
+
+- Implementacao real de I2S DMA.
+- Implementacao real de USB Audio UAC.
+- Task DSP Core 1.
+- Wi-Fi AP real.
+- Webserver/captive portal real.
 - Testes Unity.
-- Build/flash em hardware.
+- Flash e monitor em hardware.
 
 Proximo passo aprovado:
 
-- Fase 1: scaffold ESP-IDF minimo e compilavel, mantendo o reference build v0.1 como alvo primario.
+- Iniciar `hal_ringbuf`/`dsp_noise` com testes e, em seguida, partir para I2S RX real.
 
 ## 1. Objetivo da v0.1
 
@@ -338,14 +367,14 @@ Tarefas:
    - ring buffer samples;
    - stack task DSP;
    - flag formant default `n`;
-   - TinyUSB audio;
+   - TinyUSB audio via `espressif/esp_tinyusb`;
    - LittleFS.
 5. Criar `app_main` inicial com logs de boot e versao.
 6. Rodar build inicial.
 
 Criterio de pronto:
 
-- `idf.py build` conclui com app minimo.
+- `idf.py build` conclui com app minimo. Status: concluido em ESP-IDF v6.0.1 via EIM.
 
 ### Fase 2 - `hal_ringbuf`
 
@@ -869,7 +898,7 @@ Esses dados podem aparecer inicialmente em log e depois em `/api/status`.
 
 ## 15. Plano de versionamento sugerido
 
-- `v0.1.0-dev.1`: scaffold compila.
+- `v0.1.0-dev.1`: scaffold compila. Status: concluido localmente.
 - `v0.1.0-dev.2`: ringbuf + noise + testes.
 - `v0.1.0-dev.3`: USB enumera e envia silencio/test tone.
 - `v0.1.0-dev.4`: I2S captura audio.
@@ -880,12 +909,11 @@ Esses dados podem aparecer inicialmente em log e depois em `/api/status`.
 
 ## 16. Primeiro proximo passo recomendado
 
-Comecar pela Fase 1:
+Fase 1 concluida. Seguir pela Fase 2:
 
-1. Criar scaffold ESP-IDF.
-2. Configurar `sdkconfig.defaults`.
-3. Adicionar `partitions.csv`.
-4. Criar componentes vazios com CMake.
-5. Fazer `idf.py build` do app minimo.
+1. Consolidar `hal_ringbuf` com teste Unity.
+2. Consolidar `dsp_noise` deterministico com teste Unity.
+3. Medir custo por bloco do caminho DSP minimo.
+4. Preparar `hal_i2s` real para captura do INMP441.
 
-Isso cria uma base compilavel antes de qualquer detalhe sensivel de audio/USB.
+Isso preserva a base compilavel enquanto transforma os primeiros stubs em comportamento real.

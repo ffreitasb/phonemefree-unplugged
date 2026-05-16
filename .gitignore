@@ -5,3 +5,10 @@ HARDWARE_BOM_IDEAL.md
 assets/internal/
 docs/internal/
 internal/
+
+# ESP-IDF local build output
+build/
+sdkconfig
+sdkconfig.old
+managed_components/
+eim_config.toml

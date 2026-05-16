@@ -98,6 +98,12 @@ Default I2S pins:
 | WS | 5 |
 | DATA | 6 |
 
+### Future Hardware Ideas
+
+External analog microphones through a 3.5 mm P2/TRS/TRRS jack are a low-priority future expansion, not part of the v0.1 implementation pipeline. If explored later, the preferred path is a small external analog front-end or audio codec that outputs I2S back into the ESP32-S3, instead of feeding raw microphone audio directly into the MCU ADC. This keeps the main firmware architecture closer to the current `I2S -> DSP -> USB` path and avoids making analog gain, biasing, jack pinout, and noise handling part of the MVP.
+
+Bluetooth headset or Bluetooth microphone connectivity is intentionally out of scope. It is excluded both by design and by the ESP32-S3 hardware profile: the project is built around local wired USB audio output, while common Bluetooth headsets rely on Bluetooth Classic audio profiles that are not a fit for the ESP32-S3 BLE-focused target. Bluetooth audio is not in the implementation pipeline.
+
 ## Architecture
 
 ```text
@@ -143,7 +149,7 @@ Core firmware map:
 
 ## Quickstart
 
-This repository is not buildable yet. The first implementation step is the ESP-IDF scaffold described in `docs/project/PLAN_V0.1_MVP.md`.
+This repository now contains the initial ESP-IDF scaffold described in `docs/project/PLAN_V0.1_MVP.md`.
 
 Expected toolchain:
 
@@ -152,13 +158,15 @@ Expected toolchain:
 - Python environment managed by ESP-IDF.
 - PowerShell for local helper scripts on Windows.
 
-Expected build flow once the scaffold exists:
+On this Windows setup, run ESP-IDF commands through EIM:
 
 ```powershell
-idf.py set-target esp32s3
-idf.py build
-idf.py flash monitor
+eim --do-not-track true run "idf.py set-target esp32s3"
+eim --do-not-track true run "idf.py build"
+eim --do-not-track true run "idf.py flash monitor"
 ```
+
+See `docs/firmware/ESP_IDF_SETUP.md` for local setup notes.
 
 ## Roadmap
 
@@ -166,7 +174,8 @@ idf.py flash monitor
 - [x] v0.1 MVP plan.
 - [x] v0.1 reference hardware build.
 - [x] Hardware bring-up checklist.
-- [ ] ESP-IDF scaffold.
+- [x] ESP-IDF scaffold.
+- [x] Local ESP-IDF build validation.
 - [ ] Ring buffer component.
 - [ ] Deterministic noise DSP.
 - [ ] USB microphone enumeration.
@@ -189,6 +198,7 @@ idf.py flash monitor
 | [hardware/README.md](hardware/README.md) | Hardware directory map. |
 | [assets/README.md](assets/README.md) | Assets directory map. |
 | [tools/README.md](tools/README.md) | Tooling directory map. |
+| [AGENTS.md](AGENTS.md) | Persistent Codex project instructions and engineering constraints. |
 | [README.md](README.md) | Project overview, status, and development map. |
 
 More project documents will be added as the firmware takes shape.
