@@ -11,3 +11,5 @@ idf_component_register(
         wifi_ap
         webserver_portal
 )
+
+littlefs_create_partition_image(littlefs ../data FLASH_IN_PROJECT)

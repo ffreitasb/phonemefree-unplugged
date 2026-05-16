@@ -10,7 +10,9 @@ Current v0.1 path:
 - `dsp_noise` is deterministic and test-covered.
 - `usb_audio_uac` installs TinyUSB as a UAC2 mono microphone, exposes the project VID/PID/product strings, and feeds 16 kHz / 16-bit PCM from the DSP output ring buffer.
 - USB underruns are filled with silence and counted for diagnostics.
-- Wi-Fi AP, captive portal, LittleFS serving, WebSocket controls, and real pitch shifting are still scaffold or future v0.1 work.
+- `wifi_ap` starts an open offline SoftAP named `PhonemeFree Unplugged`.
+- `webserver_portal` mounts LittleFS, serves `data/index.html`, exposes `GET /api/status`, and accepts minimal WebSocket control messages at `/ws`.
+- Real pitch shifting, captive DNS redirect, and bench validation are still future v0.1 work.
 
 Technical note: the current TinyUSB path uses the bundled UAC2 microphone descriptor helper. The PRD mentions UAC 1.0; host compatibility must be validated on hardware before deciding whether to keep UAC2 for v0.1 or replace the descriptor with a manual UAC1 implementation.
 

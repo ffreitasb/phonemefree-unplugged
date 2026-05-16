@@ -30,6 +30,7 @@ CONFIG_PHONEMEFREE_UNPLUGGED_WEBSERVER_TASK_STACK_SIZE=6144
 
 # Feature gates
 CONFIG_PHONEMEFREE_UNPLUGGED_FORMANT_ENABLE=n
+CONFIG_HTTPD_WS_SUPPORT=y
 
 # TinyUSB/UAC is implemented in usb_audio_uac. ESP-IDF 6.0.1 and the
 # espressif/tinyusb component do not expose the older audio Kconfig symbols here.

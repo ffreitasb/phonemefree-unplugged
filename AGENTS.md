@@ -114,10 +114,11 @@ Generated local files that should stay untracked:
 
 ## Next Implementation Bias
 
-Current firmware core builds with I2S capture, DSP task, and an initial TinyUSB UAC2 microphone feeder. Next, prioritize:
+Current firmware builds with I2S capture, DSP task, initial TinyUSB UAC2 microphone feeder, open Wi-Fi SoftAP, LittleFS UI image generation, `/api/status`, and a minimal `/ws` control path. Next, prioritize:
 
 1. Flash and serial monitor on the reference ESP32-S3 board.
 2. Host validation of USB microphone enumeration and UAC2 compatibility.
 3. Hardware bring-up of INMP441 I2S capture on GPIO4/5/6.
 4. End-to-end `I2S -> DSP -> USB` audio validation.
-5. Wi-Fi AP, captive portal, and portal controls writing `g_dsp_params` with `atomic_store`.
+5. Browser validation of AP portal, `/api/status`, and `/ws` controls.
+6. Captive DNS redirect and real pitch shifting.

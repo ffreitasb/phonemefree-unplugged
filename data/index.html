@@ -5,32 +5,229 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PhonemeFree Unplugged</title>
   <style>
-    :root { color-scheme: dark; }
+    :root {
+      color-scheme: dark;
+      --bg: #090a0a;
+      --panel: #101414;
+      --line: #1d3c32;
+      --text: #d7fff0;
+      --muted: #76a693;
+      --accent: #19f28e;
+      --warn: #ffd166;
+    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: #0a0a0a;
-      color: #00ff88;
-      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      background: var(--bg);
+      color: var(--text);
+      font: 14px/1.45 ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
     }
     main {
-      width: min(680px, calc(100vw - 32px));
-      border: 1px solid #00ff88;
-      padding: 24px;
+      width: min(860px, calc(100vw - 28px));
+      margin: 0 auto;
+      padding: 22px 0 32px;
     }
-    h1 { font-size: 20px; margin: 0 0 16px; letter-spacing: 0; }
-    p { line-height: 1.5; margin: 8px 0; }
-    code { color: #ffffff; }
+    header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+    }
+    h1 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+    .status {
+      color: var(--muted);
+      text-align: right;
+      white-space: nowrap;
+    }
+    section {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+      margin: 14px 0;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+    }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    output {
+      color: var(--text);
+      min-width: 5ch;
+      text-align: right;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    button {
+      border: 1px solid var(--line);
+      background: #0b1111;
+      color: var(--text);
+      padding: 10px 12px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button[aria-pressed="true"] {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    pre {
+      margin: 0;
+      min-height: 112px;
+      overflow: auto;
+      color: var(--muted);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .warn { color: var(--warn); }
+    @media (max-width: 620px) {
+      header { align-items: start; flex-direction: column; }
+      .status { text-align: left; }
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>PHONEMEFREE UNPLUGGED</h1>
-    <p>STATUS: SCAFFOLD</p>
-    <p>USB Audio, Wi-Fi portal, and DSP controls will land in the next firmware passes.</p>
-    <p>Reference build: <code>ESP32-S3-WROOM-1 N8R8/N16R8 + INMP441</code></p>
+    <header>
+      <h1>PHONEMEFREE UNPLUGGED</h1>
+      <div class="status" id="link">DISCONNECTED</div>
+    </header>
+
+    <section>
+      <div class="grid">
+        <label>
+          <span class="row">PITCH <output id="pitchValue">0</output></span>
+          <input id="pitch" type="range" min="-12" max="12" value="0">
+        </label>
+        <label>
+          <span class="row">NOISE <output id="noiseValue">0</output></span>
+          <input id="noise" type="range" min="0" max="100" value="0">
+        </label>
+        <label>
+          <span class="row">FORMANT <output id="formantValue">0</output></span>
+          <input id="formant" type="range" min="-50" max="50" value="0">
+        </label>
+        <label>
+          <span class="row">DSP <output id="enabledValue">ON</output></span>
+          <button id="enabled" aria-pressed="true">ENABLED</button>
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <pre id="telemetry">WAITING FOR STATUS</pre>
+    </section>
   </main>
+
+  <script>
+    const state = { enabled: true, pitch: 0, noise: 0, formant: 0 };
+    const els = {
+      link: document.querySelector("#link"),
+      telemetry: document.querySelector("#telemetry"),
+      enabled: document.querySelector("#enabled"),
+      enabledValue: document.querySelector("#enabledValue"),
+      pitch: document.querySelector("#pitch"),
+      pitchValue: document.querySelector("#pitchValue"),
+      noise: document.querySelector("#noise"),
+      noiseValue: document.querySelector("#noiseValue"),
+      formant: document.querySelector("#formant"),
+      formantValue: document.querySelector("#formantValue")
+    };
+    let ws;
+    let retryMs = 2000;
+
+    function paintControls() {
+      els.pitch.value = state.pitch;
+      els.pitchValue.textContent = state.pitch;
+      els.noise.value = state.noise;
+      els.noiseValue.textContent = state.noise;
+      els.formant.value = state.formant;
+      els.formantValue.textContent = state.formant;
+      els.enabled.setAttribute("aria-pressed", String(state.enabled));
+      els.enabled.textContent = state.enabled ? "ENABLED" : "BYPASS";
+      els.enabledValue.textContent = state.enabled ? "ON" : "OFF";
+    }
+
+    function send() {
+      paintControls();
+      const payload = JSON.stringify(state);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(payload);
+      }
+    }
+
+    function connect() {
+      ws = new WebSocket(`ws://${location.host}/ws`);
+      ws.onopen = () => {
+        retryMs = 2000;
+        els.link.textContent = "CONNECTED";
+        send();
+      };
+      ws.onmessage = event => {
+        try {
+          const msg = JSON.parse(event.data);
+          els.telemetry.textContent = JSON.stringify(msg, null, 2);
+        } catch {
+          els.telemetry.textContent = event.data;
+        }
+      };
+      ws.onclose = () => {
+        els.link.textContent = "RECONNECTING";
+        setTimeout(connect, retryMs);
+        retryMs = Math.min(retryMs * 2, 30000);
+      };
+      ws.onerror = () => ws.close();
+    }
+
+    async function pollStatus() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        const status = await response.json();
+        els.telemetry.textContent = JSON.stringify(status, null, 2);
+      } catch {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          els.telemetry.innerHTML = "<span class=\"warn\">STATUS OFFLINE</span>";
+        }
+      } finally {
+        setTimeout(pollStatus, 3000);
+      }
+    }
+
+    for (const key of ["pitch", "noise", "formant"]) {
+      els[key].addEventListener("input", event => {
+        state[key] = Number(event.target.value);
+        send();
+      });
+    }
+    els.enabled.addEventListener("click", () => {
+      state.enabled = !state.enabled;
+      send();
+    });
+
+    paintControls();
+    connect();
+    pollStatus();
+  </script>
 </body>
 </html>

@@ -24,6 +24,8 @@ void app_main(void)
     ESP_ERROR_CHECK(dsp_engine_start());
     ESP_ERROR_CHECK(hal_i2s_start());
     ESP_ERROR_CHECK(usb_audio_uac_start());
+    ESP_ERROR_CHECK(wifi_ap_start());
+    ESP_ERROR_CHECK(webserver_portal_start());
 
     ESP_LOGI(TAG, "Firmware services started");
 }

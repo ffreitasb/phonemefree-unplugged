@@ -90,10 +90,28 @@ Concluido nesta etapa de firmware USB inicial:
 - Build do app principal validado novamente com USB Audio real.
 - Build do app Unity `test_apps/firmware_core` validado novamente apos a mudanca.
 
+Concluido nesta etapa de portal inicial:
+
+- `wifi_ap` deixou de ser stub:
+  - inicializa NVS, esp_netif, event loop e Wi-Fi;
+  - cria SoftAP aberto `PhonemeFree Unplugged`;
+  - usa canal 6, ate 4 conexoes e largura `WIFI_BW20`;
+  - registra eventos de conexao/desconexao.
+- `webserver_portal` deixou de ser stub:
+  - monta LittleFS em `/littlefs`;
+  - inclui `data/index.html` no build via `littlefs_create_partition_image`;
+  - serve `/`;
+  - expoe `GET /api/status` com contadores de DSP, I2S e USB;
+  - registra `/ws` quando `CONFIG_HTTPD_WS_SUPPORT=y`;
+  - aceita mensagens JSON pequenas para `enabled`, `pitch`, `noise` e `formant`, sem cJSON.
+- `data/index.html` virou GUI local minima com sliders, toggle, WebSocket e fallback de status.
+- Build do app principal validado com `littlefs.bin` gerado.
+- Build do app Unity `test_apps/firmware_core` validado novamente apos adicionar dependencia LittleFS.
+
 Ainda nao iniciado ou ainda scaffold:
 
-- Wi-Fi AP real.
-- Webserver/captive portal real.
+- Captive DNS redirect real.
+- Pitch shifting real.
 - Flash e monitor em hardware.
 
 Pendente de validacao em bancada:
@@ -943,13 +961,13 @@ Esses dados podem aparecer inicialmente em log e depois em `/api/status`.
 - `v0.1.0-dev.3`: I2S + DSP task + USB Audio feeder compilando. Status: concluido em build; pendente enumeracao em hardware.
 - `v0.1.0-dev.4`: I2S captura audio em bancada.
 - `v0.1.0-dev.5`: I2S -> DSP -> USB validado em host.
-- `v0.1.0-dev.6`: Wi-Fi AP + portal.
-- `v0.1.0-dev.7`: WebSocket controla DSP.
+- `v0.1.0-dev.6`: Wi-Fi AP + portal. Status: concluido em build; pendente validacao em hardware.
+- `v0.1.0-dev.7`: WebSocket controla DSP. Status: implementado em build; pendente validacao no browser.
 - `v0.1.0`: MVP funcional validado em bancada.
 
 ## 16. Primeiro proximo passo recomendado
 
-Fases 1, 2, 3, 4, 6 e parte da 7 estao compilando. Seguir pelo bring-up em hardware:
+Fases 1, 2, 3, 4, 6, 7, 9, 10, 11 e 12 estao parcialmente ou totalmente compilando. Seguir pelo bring-up em hardware:
 
 1. Flashar o firmware no ESP32-S3 reference build.
 2. Confirmar logs de boot, init I2S, DSP e TinyUSB.
@@ -957,4 +975,4 @@ Fases 1, 2, 3, 4, 6 e parte da 7 estao compilando. Seguir pelo bring-up em hardw
 4. Validar captura real do INMP441 e contadores de underrun/drop.
 5. Ajustar descriptor UAC, pinagem ou timing conforme evidencia de bancada.
 
-Isso transforma a base compilavel em evidencia fisica antes de aprofundar Wi-Fi, captive portal e GUI.
+Isso transforma a base compilavel em evidencia fisica antes de aprofundar captive DNS, pitch real e refinos de UX.
