@@ -62,7 +62,7 @@ Concluido nesta etapa de firmware core:
 - `hal_i2s` deixou de ser stub:
   - configura I2S STD RX em 16 kHz;
   - usa frames de 32 bits no slot esquerdo;
-  - converte INMP441-style 24-bit-left-aligned para PCM 16-bit;
+  - converte ICS-43434/INMP441-style 24-bit I2S para PCM 16-bit;
   - envia blocos ao ring buffer de entrada sem bloquear;
   - contabiliza capturas, timeouts, erros e drops.
 - `dsp_engine` deixou de ser stub:
@@ -94,7 +94,7 @@ Concluido nesta etapa de portal inicial:
 
 - `wifi_ap` deixou de ser stub:
   - inicializa NVS, esp_netif, event loop e Wi-Fi;
-  - cria SoftAP aberto `PhonemeFree Unplugged`;
+  - cria SoftAP aberto `PhonemeFree Unplugged` como implementacao provisoria de desenvolvimento;
   - usa canal 6, ate 4 conexoes e largura `WIFI_BW20`;
   - registra eventos de conexao/desconexao.
 - `webserver_portal` deixou de ser stub:
@@ -122,34 +122,52 @@ Concluido nesta etapa de licenciamento inicial:
   - politica de marca e forks.
 - `AGENTS.md`, `README.md`, `docs/README.md`, `hardware/README.md` e `docs/hardware/README.md` atualizados para refletir o modelo.
 
+Decisoes atualizadas para hardware/rede v0.1:
+
+- ICS-43434 passa a ser o microfone oficial/preferencial da v0.1.
+- INMP441 continua suportado como fallback comum, mas nao e mais o alvo preferencial.
+- O firmware deve ser radio-silent por padrao: Wi-Fi desligado durante operacao normal como microfone USB.
+- AP de configuracao deve ser WPA2, nunca aberto para aceite da v0.1.
+- AP e portal devem iniciar somente durante janela fisica de manutencao acionada por botao.
+- A ISR do botao deve apenas notificar uma task/fila/timer; `esp_wifi_start()` e `esp_wifi_stop()` nao devem ser chamados dentro da ISR.
+- Timeout do AP:
+  - 2 minutos sem cliente/heartbeat derruba o AP;
+  - 10 minutos de hard cap derrubam o AP mesmo com cliente conectado.
+- Documentacao publica deve usar a postura "radio-silent by default" em vez de prometer "air-gapped" permanente.
+
 Ainda nao iniciado ou ainda scaffold:
 
 - Captive DNS redirect real.
 - Pitch shifting real.
 - Flash e monitor em hardware.
+- Refatoracao do AP para on-demand WPA2 com botao fisico, timeout de inatividade e hard cap.
+- Configuracao persistente da senha WPA2 em NVS.
 
 Pendente de validacao em bancada:
 
-- Captura I2S real com INMP441 fisico.
+- Captura I2S real com ICS-43434 fisico.
+- Captura I2S comparativa com INMP441 fallback.
 - Qualidade da conversao 32-bit I2S -> PCM 16-bit.
-- Estabilidade das tasks de audio sob carga de Wi-Fi/USB.
+- Estabilidade das tasks de audio com Wi-Fi desligado durante operacao normal e com AP ativo apenas na janela de manutencao.
 
 Proximo passo aprovado:
 
-- Fazer bring-up em hardware: flash, logs de boot, enumeracao USB como microfone no host e captura I2S real do INMP441.
+- Fazer bring-up em hardware: flash, logs de boot, enumeracao USB como microfone no host e captura I2S real do ICS-43434, mantendo INMP441 como fallback de comparacao.
 
 ## 1. Objetivo da v0.1
 
 Entregar um firmware ESP-IDF para ESP32-S3 que:
 
-- usa como alvo primario o reference build `ESP32-S3-WROOM-1 N8R8/N16R8 + INMP441`;
+- usa como alvo primario o reference build `ESP32-S3-WROOM-1 N8R8/N16R8 + ICS-43434`;
 - inicializa em hardware alvo ESP32-S3;
-- captura audio mono 16 kHz do microfone I2S INMP441;
+- captura audio mono 16 kHz do microfone I2S ICS-43434, com INMP441 como fallback;
 - normaliza o fluxo para PCM `int16_t`;
 - aplica pipeline DSP minimo em tempo real;
 - enumera como dispositivo USB Audio Class 1.0, microfone mono 16 kHz / 16-bit;
 - transmite audio processado para o host via USB;
-- sobe Wi-Fi AP offline com captive portal;
+- permanece com Wi-Fi desligado durante operacao normal;
+- sobe AP WPA2 offline com captive portal somente apos acionamento fisico de manutencao;
+- derruba AP/portal por inatividade ou hard cap;
 - permite alterar parametros DSP por WebSocket;
 - expoe uma GUI local simples em `index.html` via LittleFS;
 - possui testes unitarios de componentes criticos com Unity quando viavel em host.
@@ -160,13 +178,15 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 
 1. Compilar o projeto com ESP-IDF.
 2. Gravar o firmware em um ESP32-S3 com USB nativo.
-3. Conectar um INMP441 nos pinos definidos no PRD.
+3. Conectar um ICS-43434 nos pinos definidos no reference build.
 4. Ver o dispositivo enumerar no host como `PhonemeFree Unplugged Mic`.
 5. Selecionar esse microfone no sistema operacional.
 6. Ouvir/capturar audio vindo do microfone fisico.
-7. Ativar bypass e obfuscacao via portal Wi-Fi.
-8. Ajustar ao menos `pitch`, `noise` e `enabled` pelo WebSocket/GUI.
-9. Rodar por 10 minutos em bancada sem crash, assert ou watchdog.
+7. Acionar o botao fisico de manutencao para abrir o AP WPA2 temporario.
+8. Ativar bypass e obfuscacao via portal Wi-Fi.
+9. Ajustar ao menos `pitch`, `noise` e `enabled` pelo WebSocket/GUI.
+10. Confirmar que o AP cai por inatividade e por hard cap.
+11. Rodar por 10 minutos em bancada sem crash, assert ou watchdog.
 
 ## 3. Escopo incluido na v0.1
 
@@ -236,7 +256,14 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 ### Wi-Fi AP e portal
 
 - Componente `wifi_ap`.
-- SSID aberto `PhonemeFree Unplugged`.
+- SSID `PhonemeFree Unplugged`.
+- AP WPA2 com senha default documentada e alteravel pelo usuario.
+- Wi-Fi desligado por padrao durante operacao normal como microfone USB.
+- AP iniciado apenas por botao fisico de manutencao.
+- ISR do botao limitada a notificacao de task/fila/timer.
+- `esp_wifi_start()` e `esp_wifi_stop()` chamados apenas fora da ISR.
+- Timer de inatividade: 2 minutos sem cliente/heartbeat derrubam AP e portal.
+- Hard cap: 10 minutos derrubam AP e portal mesmo com cliente ativo.
 - AP isolado, sem roteamento/NAT para internet.
 - `esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20)`.
 - Captive portal DNS basico respondendo `192.168.4.1`.
@@ -246,6 +273,7 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 - Componente `webserver_portal`.
 - `esp_http_server`, sem AsyncWebServer.
 - LittleFS montado em `/littlefs`.
+- Servidor HTTP iniciado e parado junto com a janela de manutencao do AP.
 - Endpoints:
   - `GET /`;
   - `GET /ws`;
@@ -280,7 +308,11 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 - Smoke test em hardware:
   - boot;
   - USB enumeration;
-  - Wi-Fi AP visivel;
+  - Wi-Fi AP invisivel no boot normal;
+  - Wi-Fi AP visivel somente apos botao fisico;
+  - cliente conecta via WPA2;
+  - AP cai por inatividade;
+  - AP cai por hard cap;
   - portal responde;
   - WebSocket altera parametros;
   - audio chega no host.
@@ -288,8 +320,8 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 ## 4. Fora de escopo da v0.1
 
 - `dsp_formant` funcional completo.
-- Autenticacao do portal.
-- Criptografia de rede.
+- Autenticacao web-app do portal alem da protecao WPA2.
+- Criptografia de rede alem de WPA2 no AP de configuracao.
 - Logging persistente.
 - OTA update.
 - UI responsiva sofisticada alem do necessario.
@@ -317,13 +349,16 @@ A v0.1 sera considerada funcional quando um usuario conseguir:
 8. O firmware v0.1 deve mirar primeiro o reference build documentado; XIAO, Waveshare e SuperMini sao compatibilidade posterior/best-effort.
 9. O fluxo de desenvolvimento e ESP-IDF primeiro; binarios e instalador web ficam para empacotamento de release.
 10. A implementacao USB inicial usa UAC2 porque o helper de descriptor disponivel no TinyUSB/ESP-IDF v6.0.1 e UAC2. A meta de compatibilidade do PRD continua registrada; a decisao final entre manter UAC2 ou implementar descriptor UAC1 manual depende da validacao em host real.
+11. O microfone oficial/preferencial da v0.1 e ICS-43434; INMP441 permanece fallback comum.
+12. O AP aberto atual e apenas scaffold de desenvolvimento. Para aceite v0.1, AP deve ser WPA2 e on-demand.
+13. O dispositivo deve ser descrito publicamente como radio-silent by default; "air-gapped" so vale para operacao normal com radio desligado, nao para a janela temporaria de manutencao.
 
 ## 6. Arquitetura alvo da v0.1
 
 Fluxo de audio:
 
 ```text
-INMP441
+ICS-43434
   -> hal_i2s ISR/callback
   -> s_audio_ringbuf
   -> dsp_engine_task Core 1
@@ -337,8 +372,11 @@ INMP441
 Fluxo de controle:
 
 ```text
-Browser
-  -> Wi-Fi AP
+Physical maintenance button
+  -> GPIO ISR
+  -> config task/event queue
+  -> WPA2 Wi-Fi AP + portal window
+  -> Browser
   -> esp_http_server
   -> /ws
   -> JSON validation
@@ -382,6 +420,7 @@ phonemefree-unplugged/
     ├── dsp_formant/
     ├── dsp_engine/
     ├── usb_audio_uac/
+    ├── config_button/
     ├── wifi_ap/
     └── webserver_portal/
 └── tools/
@@ -650,7 +689,8 @@ Tarefas:
 
 Criterio de pronto:
 
-- Audio capturado pelo INMP441 chega ao host via USB.
+- Audio capturado pelo ICS-43434 chega ao host via USB.
+- INMP441 fallback tambem consegue capturar audio para comparacao, quando disponivel.
 - Bypass e obfuscacao basica sao audiveis.
 
 ### Fase 9 - `wifi_ap`
@@ -659,7 +699,11 @@ Entregaveis:
 
 - `components/wifi_ap/wifi_ap.h`.
 - `components/wifi_ap/wifi_ap.c`.
-- AP aberto.
+- AP WPA2 on-demand.
+- Wi-Fi desligado por padrao.
+- Botao fisico de manutencao aciona a abertura temporaria do AP.
+- Timer de inatividade de 2 minutos sem cliente/heartbeat.
+- Hard cap de 10 minutos.
 - DNS captive portal basico.
 
 Tarefas:
@@ -668,16 +712,25 @@ Tarefas:
 2. Criar netif AP apenas.
 3. Configurar SSID `PhonemeFree Unplugged`.
 4. Configurar IP padrao `192.168.4.1`.
-5. Garantir AP sem NAT.
-6. Aplicar `WIFI_BW_HT20`.
-7. Implementar DNS redirect para qualquer query.
-8. Testar conexao a partir de celular/notebook.
+5. Configurar WPA2 com senha default.
+6. Persistir senha alteravel pelo usuario em NVS.
+7. Garantir AP sem NAT.
+8. Aplicar `WIFI_BW20` no ESP-IDF v6.
+9. Criar GPIO/button path: ISR minima -> task/event queue -> start/stop Wi-Fi.
+10. Garantir que `app_main` nao inicia Wi-Fi nem webserver no boot normal.
+11. Implementar inactivity timer de 2 minutos baseado em cliente/heartbeat.
+12. Implementar hard cap de 10 minutos.
+13. Implementar DNS redirect para qualquer query.
+14. Testar conexao a partir de celular/notebook.
 
 Criterio de pronto:
 
-- Rede aparece.
-- Cliente conecta.
+- Rede nao aparece apos boot normal.
+- Rede aparece somente apos botao fisico.
+- Cliente conecta via WPA2.
 - Qualquer dominio resolve para `192.168.4.1`.
+- Rede cai apos 2 minutos sem cliente/heartbeat.
+- Rede cai apos 10 minutos mesmo com cliente ativo.
 
 ### Fase 10 - LittleFS e assets
 
@@ -807,7 +860,7 @@ Sequencia primaria:
 5. `usb_audio_uac` com silencio/test tone.
 6. `hal_i2s`.
 7. Integracao I2S -> DSP -> USB.
-8. `wifi_ap`.
+8. `wifi_ap` on-demand WPA2.
 9. LittleFS.
 10. `webserver_portal`.
 11. GUI.
@@ -823,7 +876,7 @@ Observacao: esta ordem antecipa `dsp_noise` antes de `dsp_pitch` para viabilizar
 - USB microphone UAC funcional, com perfil final UAC1/UAC2 decidido apos validacao em host.
 - Captura I2S funcional.
 - Pipeline DSP com bypass, pitch e noise.
-- Portal Wi-Fi offline.
+- Portal Wi-Fi offline, WPA2 e on-demand.
 - GUI `index.html` em LittleFS.
 - WebSocket de parametros.
 - `/api/status`.
@@ -843,7 +896,8 @@ Observacao: esta ordem antecipa `dsp_noise` antes de `dsp_pitch` para viabilizar
 
 - `idf.py flash monitor` grava e inicia.
 - Boot nao gera panic/assert.
-- Logs mostram init de ringbuf, I2S, DSP, USB, Wi-Fi e webserver.
+- Logs mostram init de ringbuf, I2S, DSP e USB.
+- Logs mostram Wi-Fi e webserver parados apos boot normal.
 
 ### USB
 
@@ -861,12 +915,15 @@ Observacao: esta ordem antecipa `dsp_noise` antes de `dsp_pitch` para viabilizar
 
 ### Portal
 
-- AP `PhonemeFree Unplugged` aparece.
-- Cliente conecta sem senha.
+- AP `PhonemeFree Unplugged` nao aparece no boot normal.
+- AP aparece somente apos acionamento fisico de manutencao.
+- Cliente conecta via WPA2.
 - `http://192.168.4.1/` abre a GUI.
 - WebSocket conecta.
 - Sliders atualizam parametros.
 - `/api/status` retorna JSON valido.
+- AP derruba apos 2 minutos sem cliente/heartbeat.
+- AP derruba apos 10 minutos mesmo com cliente ativo.
 
 ### Estabilidade
 
@@ -885,12 +942,17 @@ Antes de declarar v0.1:
 - [ ] LittleFS montado.
 - [ ] USB enumerado como microfone.
 - [ ] Host recebe audio.
-- [ ] I2S captura audio real do INMP441.
+- [ ] I2S captura audio real do ICS-43434.
+- [ ] I2S captura audio real do INMP441 fallback, se disponivel.
 - [ ] Bypass funciona.
 - [ ] Noise funciona.
 - [ ] Pitch funciona.
-- [ ] AP Wi-Fi aparece.
-- [ ] Cliente conecta no AP.
+- [ ] AP Wi-Fi nao aparece no boot normal.
+- [ ] Botao fisico aciona janela de manutencao.
+- [ ] AP Wi-Fi aparece somente durante janela de manutencao.
+- [ ] Cliente conecta no AP via WPA2.
+- [ ] AP cai apos 2 minutos sem cliente/heartbeat.
+- [ ] AP cai apos hard cap de 10 minutos.
 - [ ] Captive portal redireciona.
 - [ ] `/` serve `index.html`.
 - [ ] `/api/status` retorna JSON.
@@ -934,10 +996,14 @@ Mitigacao:
 
 ### Wi-Fi vs latencia
 
-Risco: Wi-Fi e portal podem interferir em tempo real se logs, callbacks ou prioridade forem mal configurados.
+Risco: Wi-Fi e portal podem interferir em tempo real se ficarem ativos durante operacao normal ou se logs, callbacks ou prioridade forem mal configurados.
 
 Mitigacao:
 
+- Wi-Fi desligado por padrao.
+- AP e portal ativos apenas durante janela fisica de manutencao.
+- Timeout de 2 minutos sem cliente/heartbeat.
+- Hard cap de 10 minutos.
 - Core 1 dedicado ao DSP.
 - Wi-Fi/web no Core 0.
 - HT20.
@@ -973,10 +1039,11 @@ Esses dados podem aparecer inicialmente em log e depois em `/api/status`.
 - `v0.1.0-dev.1`: scaffold compila. Status: concluido localmente.
 - `v0.1.0-dev.2`: ringbuf + noise + testes. Status: concluido.
 - `v0.1.0-dev.3`: I2S + DSP task + USB Audio feeder compilando. Status: concluido em build; pendente enumeracao em hardware.
-- `v0.1.0-dev.4`: I2S captura audio em bancada.
+- `v0.1.0-dev.4`: I2S captura audio em bancada com ICS-43434.
 - `v0.1.0-dev.5`: I2S -> DSP -> USB validado em host.
-- `v0.1.0-dev.6`: Wi-Fi AP + portal. Status: concluido em build; pendente validacao em hardware.
+- `v0.1.0-dev.6`: Wi-Fi AP + portal. Status: scaffold aberto concluido em build; precisa refatorar para WPA2 on-demand antes de aceite.
 - `v0.1.0-dev.7`: WebSocket controla DSP. Status: implementado em build; pendente validacao no browser.
+- `v0.1.0-dev.8`: botao fisico + radio-silent default + timeouts do AP validados.
 - `v0.1.0`: MVP funcional validado em bancada.
 
 ## 16. Primeiro proximo passo recomendado
@@ -986,7 +1053,8 @@ Fases 1, 2, 3, 4, 6, 7, 9, 10, 11 e 12 estao parcialmente ou totalmente compilan
 1. Flashar o firmware no ESP32-S3 reference build.
 2. Confirmar logs de boot, init I2S, DSP e TinyUSB.
 3. Validar enumeracao como microfone no host.
-4. Validar captura real do INMP441 e contadores de underrun/drop.
+4. Validar captura real do ICS-43434 e contadores de underrun/drop.
 5. Ajustar descriptor UAC, pinagem ou timing conforme evidencia de bancada.
+6. Refatorar AP aberto de desenvolvimento para WPA2 on-demand com botao fisico, inactivity timeout e hard cap.
 
-Isso transforma a base compilavel em evidencia fisica antes de aprofundar captive DNS, pitch real e refinos de UX.
+Isso transforma a base compilavel em evidencia fisica antes de aprofundar captive DNS, pitch real e refinos de UX, sem manter o radio ativo como estado normal do produto.

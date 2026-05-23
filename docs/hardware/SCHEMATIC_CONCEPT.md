@@ -17,9 +17,10 @@ The hardware must support:
 
 - native USB Device mode for USB Audio Class microphone output;
 - I2S microphone input;
+- physical maintenance button for temporary configuration AP;
 - stable 3.3 V power for ESP32-S3 and microphone;
 - short, clean digital audio wiring;
-- offline Wi-Fi AP operation;
+- radio-silent-by-default operation with temporary WPA2 configuration AP;
 - future migration from breadboard to perfboard to custom PCB.
 
 Non-goals for the first schematic:
@@ -39,7 +40,8 @@ flowchart LR
     HOST["USB host<br/>PC / phone / tablet"]
     USB["USB data cable<br/>native ESP32-S3 USB"]
     MCU["ESP32-S3 dev board<br/>WROOM / XIAO / compact S3"]
-    MIC["I2S MEMS microphone<br/>INMP441 module"]
+    MIC["I2S MEMS microphone<br/>ICS-43434 primary<br/>INMP441 fallback"]
+    BTN["Config button<br/>safe spare GPIO TBD"]
 
     HOST <--> USB
     USB <--> MCU
@@ -50,8 +52,9 @@ flowchart LR
     MCU -- "GPIO5 / I2S WS" --> MIC
     MIC -- "SD / DOUT -> GPIO6" --> MCU
     MCU -- "GND or 3V3<br/>L/R select" --> MIC
+    BTN --> MCU
 
-    note1["Keep BCLK / WS / DATA short.<br/>Do not use GPIO19/20 for the microphone.<br/>GPIO19/20 are native USB D-/D+."]
+    note1["Keep BCLK / WS / DATA short.<br/>Do not use GPIO19/20 for the microphone or config button.<br/>GPIO19/20 are native USB D-/D+."]
     note1 -.-> MCU
 ```
 
@@ -69,6 +72,7 @@ Default firmware pinout:
 | `I2S_WS` | `GPIO5` | `WS` / `LRCLK` | ESP32-S3 -> mic | Default PRD pin. |
 | `I2S_DIN` | `GPIO6` | `SD` / `DOUT` | mic -> ESP32-S3 | Default PRD pin. |
 | `MIC_LR_SEL` | `GND` first | `L/R` | Static select | Start with GND; switch to 3V3 if channel selection requires it. |
+| `CFG_BTN` | Safe spare GPIO TBD | Tactile button to GND | Input | Opens the temporary WPA2 maintenance AP; avoid USB, I2S, and risky boot strap pins. |
 | `USB_D-` | `GPIO19` | USB connector D- | Bidirectional | Already routed on dev boards. Do not repurpose. |
 | `USB_D+` | `GPIO20` | USB connector D+ | Bidirectional | Already routed on dev boards. Do not repurpose. |
 
@@ -76,7 +80,7 @@ Default firmware pinout:
 
 For the first firmware bring-up:
 
-| ESP32-S3 Dev Board | INMP441-style Module |
+| ESP32-S3 Dev Board | ICS/INMP441-style Module |
 | --- | --- |
 | `3V3` | `VDD` |
 | `GND` | `GND` |
@@ -84,11 +88,14 @@ For the first firmware bring-up:
 | `GPIO5` | `WS` / `LRCLK` |
 | `GPIO6` | `SD` / `DOUT` |
 | `GND` | `L/R` |
+| Safe spare GPIO TBD | Config button |
+| `GND` | Config button |
 
 Rules:
 
 - Use the shortest jumpers you have.
 - Keep `BCLK`, `WS`, and `DATA` away from loose power wires.
+- Wire the config button only after selecting a safe spare GPIO for the chosen board.
 - If using a breadboard, avoid running I2S signals across the whole board.
 - If audio is silent, test `L/R` tied to `3V3` before changing hardware.
 - If audio is unstable, move to soldered perfboard before debugging DSP.
@@ -97,7 +104,7 @@ Rules:
 
 For a compact public build:
 
-| XIAO ESP32S3 Pin | ESP32-S3 GPIO | INMP441-style Module |
+| XIAO ESP32S3 Pin | ESP32-S3 GPIO | ICS/INMP441-style Module |
 | --- | ---: | --- |
 | `3V3` | 3.3 V | `VDD` |
 | `GND` | GND | `GND` |
@@ -122,7 +129,7 @@ Recommended physical arrangement:
 |                                     |
 |       short underside I2S wires     |
 |                                     |
-| [ INMP441 module near board edge ]  |
+| [ ICS-43434 module near board edge ]|
 |   acoustic port faces outside       |
 +-------------------------------------+
 ```
@@ -147,6 +154,7 @@ flowchart LR
     MICPWR["Filtered mic 3V3<br/>0R/ferrite option"]
     MIC["I2S MEMS microphone<br/>bottom-port"]
     BOOT["BOOT + RESET<br/>debug access"]
+    CFG["Config button<br/>temporary WPA2 AP"]
     UART["UART/test pads<br/>3V3/GND/TX/RX"]
     LED["Status LED<br/>optional"]
 
@@ -159,6 +167,7 @@ flowchart LR
     MCU -- "I2S BCLK / WS" --> MIC
     MIC -- "I2S DATA" --> MCU
     BOOT --> MCU
+    CFG --> MCU
     UART --> MCU
     MCU --> LED
 
@@ -234,13 +243,14 @@ PCB rules:
 
 Reference MVP microphone:
 
-- INMP441 breakout for public MVP;
+- ICS-43434 breakout for public MVP;
+- INMP441 breakout as common fallback;
 - bottom-port I2S MEMS microphone for future PCB.
 
 Future PCB candidates:
 
-- INMP441-style I2S microphone if availability is good;
-- ICS-43434 if available and desired;
+- ICS-43434 if availability and bench results remain good;
+- INMP441-style I2S microphone as fallback footprint if needed;
 - TDK T5848 for a premium later revision.
 
 Required nets:
@@ -304,7 +314,8 @@ These should be resolved before a real KiCad schematic:
 - Which exact ESP32-S3 board/module becomes the public reference build?
 - Does the firmware keep GPIO4/5/6 forever or expose alternate pin profiles?
 - Which microphone has the best availability/quality tradeoff after real audio tests?
-- Should the custom PCB include a physical bypass button?
+- Which GPIO should the physical configuration AP button use without touching USB pins, I2S pins, or risky boot straps?
+- Should the custom PCB include a separate physical bypass button?
 - Should the custom PCB include a mute/privacy switch that cuts microphone data or power?
 - Should the device expose UART pads only, or include a USB-UART bridge?
 - Is the final enclosure USB dongle-sized, small box-sized, or wearable-sized?

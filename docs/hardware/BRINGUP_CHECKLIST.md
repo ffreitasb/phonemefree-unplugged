@@ -8,7 +8,9 @@ Reference build:
 
 ```text
 ESP32-S3-WROOM-1 N8R8/N16R8 USB-C development board
-+ INMP441 I2S microphone module
++ ICS-43434 I2S microphone breakout
++ INMP441 I2S microphone fallback, if available
++ tactile configuration button on safe spare GPIO, exact GPIO TBD
 + GPIO4 BCLK
 + GPIO5 WS
 + GPIO6 DATA
@@ -19,11 +21,13 @@ ESP32-S3-WROOM-1 N8R8/N16R8 USB-C development board
 
 - [ ] ESP32-S3 board is a real ESP32-S3, not ESP32-C3/C6/S2.
 - [ ] Board exposes GPIO4, GPIO5, and GPIO6.
+- [ ] Board exposes at least one extra GPIO for the physical configuration button.
 - [ ] Board has access to native USB for device mode.
 - [ ] Board has BOOT and RESET buttons.
 - [ ] Board has a 3V3 pin.
 - [ ] Microphone module is I2S, not analog and not PDM-only.
-- [ ] Microphone module exposes `SCK/BCLK`, `WS/LRCLK`, `SD/DOUT`, `VDD`, `GND`, and preferably `L/R`.
+- [ ] Microphone module exposes `SCK/BCLK`, `WS/LRCLK`, `SD/DOUT`, `VDD`, `GND`, and preferably `SEL/L/R`.
+- [ ] Tactile configuration button is available for the temporary AP trigger.
 - [ ] USB cable is a data cable.
 - [ ] Host computer can run ESP-IDF tooling for development.
 
@@ -42,19 +46,21 @@ Take a photo of the wiring before first power. It saves time later.
 
 With power disconnected:
 
-| ESP32-S3 Dev Board | INMP441-style Module | Check |
+| ESP32-S3 Dev Board | ICS/INMP441-style Module | Check |
 | --- | --- | --- |
 | `3V3` | `VDD` / `3V` | [ ] |
 | `GND` | `GND` | [ ] |
 | `GPIO4` | `SCK` / `BCLK` | [ ] |
 | `GPIO5` | `WS` / `LRCLK` | [ ] |
 | `GPIO6` | `SD` / `DOUT` | [ ] |
-| `GND` | `L/R` | [ ] |
+| `GND` | `SEL` / `L/R` | [ ] |
 
 Rules:
 
 - [ ] I2S wires are short.
 - [ ] GPIO19 and GPIO20 are not connected to the microphone.
+- [ ] Configuration button is wired from the selected spare GPIO to GND, expecting firmware/internal pull-up.
+- [ ] Configuration button is not connected to GPIO19/GPIO20, GPIO4/GPIO5/GPIO6, or a risky boot strap pin.
 - [ ] No signal wire is connected to 5 V.
 - [ ] `VDD` on the microphone is connected to 3.3 V, not 5 V.
 
@@ -119,7 +125,7 @@ When `hal_i2s` exists:
 - [ ] Ring buffer receives bytes.
 - [ ] Silence produces low-amplitude samples.
 - [ ] Finger tap or voice near mic changes sample amplitude.
-- [ ] If samples are always zero, test `L/R` tied to 3V3.
+- [ ] If samples are always zero, test `SEL` / `L/R` tied to 3V3.
 - [ ] If samples are noise only, shorten wiring and re-check ground.
 
 Optional if a logic analyzer is available:
@@ -162,13 +168,17 @@ Suggested host checks:
 
 When Wi-Fi and portal exist:
 
-- [ ] AP `PhonemeFree Unplugged` appears.
-- [ ] Client connects without password.
+- [ ] AP `PhonemeFree Unplugged` does not appear after normal boot.
+- [ ] Physical maintenance button opens the temporary AP window.
+- [ ] AP `PhonemeFree Unplugged` appears only during the maintenance window.
+- [ ] Client connects via WPA2.
 - [ ] Device remains USB-enumerated while Wi-Fi is active.
 - [ ] `http://192.168.4.1/` serves the UI.
 - [ ] `/api/status` returns JSON.
 - [ ] `/ws` connects.
 - [ ] Slider changes update atomic DSP parameters.
+- [ ] AP stops after 2 minutes without client/heartbeat.
+- [ ] AP stops after 10 minutes even with a client connected.
 - [ ] Bad JSON does not crash the device.
 
 ## 11. Stability Pass
@@ -179,7 +189,7 @@ Before calling the reference build usable:
 - [ ] Run noise enabled for 10 minutes.
 - [ ] Run pitch enabled for 10 minutes.
 - [ ] Toggle bypass/enable repeatedly through WebSocket UI.
-- [ ] Disconnect/reconnect Wi-Fi client while USB audio is active.
+- [ ] During the maintenance window, disconnect/reconnect Wi-Fi client while USB audio is active.
 - [ ] No watchdog.
 - [ ] No panic.
 - [ ] No USB disconnect.
@@ -192,10 +202,10 @@ Use this table during bring-up:
 | Symptom | First Things To Check |
 | --- | --- |
 | Board not detected | USB cable data lines, BOOT mode, correct USB port, driver/permission. |
-| Mic samples always zero | `L/R` strap, DATA pin, 3V3, wrong GPIO, channel selection. |
+| Mic samples always zero | `SEL` / `L/R` strap, DATA pin, 3V3, wrong GPIO, channel selection. |
 | Mic samples all noise | Ground, long wires, wrong I2S format, loose breadboard connection. |
 | USB audio disconnects | Power stability, USB cable, TinyUSB callback blocking, underrun behavior. |
-| Wi-Fi breaks audio | Task affinity, logging volume, priority, Core 1 DSP isolation. |
+| Wi-Fi breaks audio | Confirm radio is off during normal operation, task affinity, logging volume, priority, Core 1 DSP isolation. |
 | Random resets | Brownout, bad USB port, short circuit, insufficient regulator margin. |
 
 ## 13. Exit Criteria
@@ -208,7 +218,8 @@ Hardware bring-up is complete when:
 - [ ] USB audio enumerates.
 - [ ] Audio reaches host in bypass mode.
 - [ ] DSP controls affect the audio.
-- [ ] Wi-Fi portal updates parameters.
+- [ ] Wi-Fi portal updates parameters only during a WPA2 maintenance window.
+- [ ] Wi-Fi radio is off again after the maintenance window closes.
 - [ ] 10-minute stability pass succeeds.
 
 After this checklist passes, the project can move toward `v0.1.0` firmware hardening.

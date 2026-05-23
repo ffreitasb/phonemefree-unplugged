@@ -6,7 +6,7 @@ Project instructions for Codex sessions working on PhonemeFree Unplugged.
 
 - PhonemeFree Unplugged is an ESP32-S3 firmware/hardware project for local voice obfuscation.
 - The device captures microphone audio, processes PCM locally, and exposes the result to a host as a USB microphone.
-- The privacy posture is local-first and air-gapped: no cloud audio, no internet routing, no hidden recording path.
+- The privacy posture is local-first and radio-silent by default: no cloud audio, Wi-Fi off during normal USB microphone operation, no internet routing, no hidden recording path.
 - User-facing conversation in this repository is usually in Brazilian Portuguese. Repository documentation is currently mostly English and ASCII.
 
 ## Source Of Truth
@@ -20,7 +20,9 @@ Project instructions for Codex sessions working on PhonemeFree Unplugged.
 
 - MCU target: ESP32-S3.
 - Reference board: ESP32-S3-WROOM-1 N8R8/N16R8 USB-C development board.
-- Reference microphone: INMP441-compatible I2S MEMS microphone module.
+- Reference microphone: ICS-43434 I2S MEMS microphone breakout.
+- Fallback microphone: INMP441-compatible I2S MEMS microphone module.
+- Budget fallback under investigation: confirm whether the intended part is MS3625, MSM261S4030H0, or another clone/module.
 - Native USB pins are reserved for USB: GPIO19 = D-, GPIO20 = D+.
 - Default I2S pins:
   - BCLK: GPIO4.
@@ -35,7 +37,11 @@ Project instructions for Codex sessions working on PhonemeFree Unplugged.
   - VID: `0x303A`.
   - PID: `0x4001`.
   - Product: `PhonemeFree Unplugged Mic`.
+- Wi-Fi radio policy: off by default; configuration AP is only started during a physical maintenance window.
 - Wi-Fi AP SSID: `PhonemeFree Unplugged`.
+- Wi-Fi AP security: WPA2 required; no open AP for v0.1 acceptance.
+- Wi-Fi AP timeout policy: stop after 2 minutes without client/heartbeat, and always stop after a 10 minute hard cap.
+- Wi-Fi AP trigger: physical button from safe spare GPIO to GND with pull-up; ISR must only notify a task/event queue; never call `esp_wifi_start()` from the ISR.
 
 ## Firmware Architecture
 
@@ -51,7 +57,8 @@ Expected component map:
 - `components/dsp_formant/`: optional formant path, disabled by default in v0.1.
 - `components/dsp_engine/`: DSP task and `_Atomic` parameter state.
 - `components/usb_audio_uac/`: TinyUSB/ESP TinyUSB UAC microphone output.
-- `components/wifi_ap/`: offline SoftAP.
+- `components/wifi_ap/`: radio-silent-by-default WPA2 SoftAP lifecycle.
+- `components/config_button/` or equivalent: physical maintenance trigger task/event path.
 - `components/webserver_portal/`: `esp_http_server`, WebSocket, and status endpoints.
 - `data/`: LittleFS web UI assets.
 
@@ -67,10 +74,14 @@ Expected component map:
 - USB underrun should emit silence instead of blocking.
 - I2S/DSP overflow should fail or drop without blocking the hot path and should increment diagnostics.
 - Keep Wi-Fi and webserver work away from the audio hot path.
+- Do not start Wi-Fi or the HTTP server during normal boot after the on-demand AP refactor lands.
+- Do not call Wi-Fi, HTTP server, NVS, or logging-heavy code from a GPIO ISR; ISRs only notify a task/timer/queue.
 
 ## Hardware Scope Decisions
 
 - v0.1 is I2S microphone first.
+- ICS-43434 is the official/preferred v0.1 microphone target.
+- INMP441 is a common fallback and should be documented with measured caveats rather than treated as the best target.
 - A 3.5 mm P2/TRS/TRRS microphone input is only a low-priority future exploration. If added later, prefer an external analog front-end or audio codec that outputs I2S; avoid making raw ESP32-S3 ADC audio the main path.
 - Bluetooth headset or Bluetooth microphone connectivity is discarded by design and ESP32-S3 hardware limitations. It is not in the implementation pipeline.
 - KiCad, custom PCB, production schematics, and manufacturing files are v0.2+ work, not v0.1 blockers.
@@ -124,11 +135,12 @@ Generated local files that should stay untracked:
 
 ## Next Implementation Bias
 
-Current firmware builds with I2S capture, DSP task, initial TinyUSB UAC2 microphone feeder, open Wi-Fi SoftAP, LittleFS UI image generation, `/api/status`, and a minimal `/ws` control path. Next, prioritize:
+Current firmware builds with I2S capture, DSP task, initial TinyUSB UAC2 microphone feeder, open Wi-Fi SoftAP scaffold, LittleFS UI image generation, `/api/status`, and a minimal `/ws` control path. The open AP is development-only and must be replaced before v0.1 acceptance. Next, prioritize:
 
 1. Flash and serial monitor on the reference ESP32-S3 board.
 2. Host validation of USB microphone enumeration and UAC2 compatibility.
-3. Hardware bring-up of INMP441 I2S capture on GPIO4/5/6.
+3. Hardware bring-up of ICS-43434 I2S capture on GPIO4/5/6, with INMP441 fallback comparison when available.
 4. End-to-end `I2S -> DSP -> USB` audio validation.
-5. Browser validation of AP portal, `/api/status`, and `/ws` controls.
-6. Captive DNS redirect and real pitch shifting.
+5. Refactor Wi-Fi to radio-silent-by-default WPA2 AP with physical button, 2 minute inactivity timeout, and 10 minute hard cap.
+6. Browser validation of AP portal, `/api/status`, and `/ws` controls inside the temporary maintenance window.
+7. Captive DNS redirect and real pitch shifting.

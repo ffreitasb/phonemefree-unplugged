@@ -6,6 +6,7 @@ flowchart LR
     MICPWR["Filtered mic 3V3<br/>0R/ferrite option"]
     MIC["I2S MEMS microphone<br/>bottom-port"]
     BOOT["BOOT + RESET<br/>debug access"]
+    CFG["Config button<br/>temporary WPA2 AP"]
     UART["UART/test pads<br/>3V3/GND/TX/RX"]
     LED["Status LED<br/>optional"]
 
@@ -18,6 +19,7 @@ flowchart LR
     MCU -- "I2S BCLK / WS" --> MIC
     MIC -- "I2S DATA" --> MCU
     BOOT --> MCU
+    CFG --> MCU
     UART --> MCU
     MCU --> LED
 

@@ -3,7 +3,7 @@
   <br><br>
   <strong>Speak freely. Leave less voiceprint. No phone required.</strong>
   <br>
-  <sub>Air-gapped ESP32-S3 USB voice obfuscation for defensive voice-cloning resistance research.</sub>
+  <sub>Radio-silent-by-default ESP32-S3 USB voice obfuscation for defensive voice-cloning resistance research.</sub>
 </div>
 
 <br>
@@ -15,7 +15,7 @@
 [![ESP-IDF](https://img.shields.io/badge/ESP--IDF-ESP32--S3-e7352c?logo=espressif&logoColor=white)](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s3/)
 [![USB Audio](https://img.shields.io/badge/USB%20Audio-UAC%201.0-00599c)](#architecture)
 [![Audio](https://img.shields.io/badge/audio-16kHz%20mono%2016--bit-00aa88)](#hardware-target)
-[![Offline](https://img.shields.io/badge/network-air--gapped-111111)](#security-and-privacy)
+[![Radio](https://img.shields.io/badge/radio-silent--by--default-111111)](#security-and-privacy)
 [![Plan](https://img.shields.io/badge/status-v0.1%20planning-blue)](docs/project/PLAN_V0.1_MVP.md)
 [![Firmware License](https://img.shields.io/badge/firmware-AGPL--3.0--or--later-663399)](LICENSE.md)
 [![Hardware License](https://img.shields.io/badge/hardware-CERN--OHL--S--2.0-0b7285)](LICENSE.md)
@@ -24,7 +24,7 @@
 
 PhonemeFree Unplugged is the hardware branch of [PhonemeFree](https://github.com/ffreitasb/PhonemeFree): a small ESP32-S3 firmware project that captures microphone audio, alters the PCM stream locally, and presents the result to a host as a class-compliant USB microphone.
 
-It is not a cloud filter, not a voice deepfake toy, and not an Android app. It is an air-gapped peripheral for studying a narrow defensive question: what happens if the microphone path stops handing clean biometric voiceprints to everything upstream?
+It is not a cloud filter, not a voice deepfake toy, and not an Android app. It is a radio-silent-by-default peripheral for studying a narrow defensive question: what happens if the microphone path stops handing clean biometric voiceprints to everything upstream?
 
 ## Why This Exists
 
@@ -37,7 +37,7 @@ The first firmware MVP is deliberately plain:
 - Capture voice from an I2S microphone.
 - Process it locally on the ESP32-S3.
 - Return the altered signal as a USB microphone.
-- Keep configuration offline through a local Wi-Fi AP.
+- Keep configuration offline through a temporary WPA2 Wi-Fi AP opened only during a physical maintenance window.
 - Measure latency, underruns, and stability from there.
 
 ## What It Is
@@ -68,13 +68,14 @@ Target release: `v0.1.0`.
 
 Planned for the first functional pass:
 
-- Reference hardware build locked to ESP32-S3-WROOM-1 N8R8/N16R8 + INMP441.
+- Reference hardware build locked to ESP32-S3-WROOM-1 N8R8/N16R8 + ICS-43434.
 - ESP-IDF scaffold for ESP32-S3.
-- I2S capture from INMP441-compatible microphone hardware.
+- I2S capture from ICS-43434-compatible microphone hardware, with INMP441 as a fallback.
 - PCM conversion to 16 kHz / 16-bit / mono.
 - DSP pipeline with bypass, pitch shift, and deterministic noise injection.
 - USB Audio Class 1.0 output using TinyUSB.
-- Offline Wi-Fi AP with captive portal.
+- Radio-silent-by-default WPA2 configuration AP with captive portal.
+- Physical button trigger for temporary maintenance mode.
 - LittleFS-hosted terminal-style control UI.
 - WebSocket parameter updates with atomic DSP state.
 - Basic Unity tests for components that can run without hardware.
@@ -86,7 +87,7 @@ The granular MVP plan lives in `docs/project/PLAN_V0.1_MVP.md`.
 | Component | Target |
 | --- | --- |
 | MCU | Reference: ESP32-S3-WROOM-1 N8R8/N16R8 dev board |
-| Microphone | Reference: INMP441 I2S microphone module |
+| Microphone | Reference: ICS-43434 I2S microphone breakout; fallback: INMP441 I2S module |
 | USB | Native ESP32-S3 USB OTG in device mode |
 | Audio | 16 kHz, 16-bit, mono PCM |
 | Storage | Flash with LittleFS partition for web assets |
@@ -109,13 +110,13 @@ Bluetooth headset or Bluetooth microphone connectivity is intentionally out of s
 ## Architecture
 
 ```text
-INMP441
+ICS-43434
    |
    v
 I2S DMA -> input ring buffer -> DSP engine -> output ring buffer -> TinyUSB UAC
                                       ^
                                       |
-                         Wi-Fi AP + captive portal + WebSocket
+                         On-demand WPA2 AP + captive portal + WebSocket
 ```
 
 Core firmware map:
@@ -127,7 +128,7 @@ Core firmware map:
 | Ring buffers | `components/hal_ringbuf/` | Shared ESP-IDF ring buffer instances |
 | DSP | `components/dsp_*` | Pitch, noise, optional formant, engine task |
 | USB audio | `components/usb_audio_uac/` | TinyUSB UAC microphone, currently UAC2 pending host validation |
-| Wi-Fi AP | `components/wifi_ap/` | Offline access point and DNS captive portal |
+| Wi-Fi AP | `components/wifi_ap/` | Radio-silent-by-default WPA2 access point, physical maintenance trigger, DNS captive portal |
 | Portal | `components/webserver_portal/` | `esp_http_server`, WebSocket, status API |
 | UI assets | `data/` | LittleFS-hosted `index.html` |
 
@@ -182,9 +183,9 @@ See `docs/firmware/ESP_IDF_SETUP.md` for local setup notes.
 - [ ] Ring buffer component.
 - [ ] Deterministic noise DSP.
 - [ ] USB microphone enumeration.
-- [ ] I2S microphone capture.
+- [ ] I2S microphone capture with ICS-43434.
 - [ ] End-to-end `I2S -> DSP -> USB` audio.
-- [ ] Wi-Fi AP and captive portal.
+- [ ] On-demand WPA2 Wi-Fi AP and captive portal.
 - [ ] WebSocket DSP controls.
 - [ ] First hardware acceptance pass.
 
@@ -224,12 +225,17 @@ The `PhonemeFree` and `PhonemeFree Unplugged` names, logos, icons, and visual id
 
 ## Security And Privacy
 
-The intended posture is local-first and air-gapped:
+The intended posture is local-first and radio-silent by default:
 
 - No cloud audio processing.
+- Wi-Fi radio off during normal USB microphone operation.
+- Configuration AP only during a physical maintenance window.
+- WPA2 required for the configuration AP.
+- AP inactivity timeout after 2 minutes without client/heartbeat.
+- AP hard cap after 10 minutes even if a client remains connected.
 - No internet routing from the device AP.
 - No persistent audio logging.
-- No portal authentication in the first MVP.
+- No app-layer portal authentication beyond WPA2 in the first MVP.
 - No hidden recording path.
 
 PhonemeFree Unplugged does not claim universal biometric anonymity. It is a defensive research tool whose protection level must be measured against real voices, real rooms, real microphones, and real models.

@@ -9,8 +9,9 @@ The reference build is the hardware target that firmware development should opti
 | Area | Reference Choice | Reason |
 | --- | --- | --- |
 | MCU board | ESP32-S3-WROOM-1 `N8R8` or `N16R8` USB-C development board | Full-size board, exposed pins, native USB, PSRAM headroom, common AliExpress availability |
-| Microphone | INMP441 I2S microphone breakout module | Common, cheap, PRD-aligned, 24-bit I2S output |
+| Microphone | ICS-43434 I2S microphone breakout module | Higher-quality I2S MEMS target, strong published specs, minimal price delta when a proper breakout is available |
 | Prototype medium | Breadboard first, then double-sided 2.54 mm perfboard | Fast bring-up first, sturdier DIY build after proof |
+| Configuration trigger | Tactile button from a spare GPIO to GND, exact GPIO TBD | Required to open the temporary WPA2 maintenance AP without keeping Wi-Fi on |
 | USB connection | Native ESP32-S3 USB port to host | Required for USB Audio Class microphone mode |
 | Power | 5 V from USB host, onboard 3.3 V regulator for ESP32-S3 and mic | Simplest public MVP power path |
 | Firmware framework | ESP-IDF | Primary development flow; release flashing UX comes later |
@@ -20,21 +21,24 @@ Recommended search terms:
 - `ESP32-S3 WROOM N16R8 USB C development board`
 - `ESP32-S3 WROOM N8R8 USB C development board`
 - `ESP32-S3 DevKitC-1 N8R8`
+- `ICS-43434 I2S microphone breakout`
+- `ICS43434 I2S microphone module`
 - `INMP441 I2S microphone module ESP32`
+- `6x6 tactile push button`
 - `double side prototype PCB 2.54mm`
 
 ## 2. Fixed v0.1 Pinout
 
 The v0.1 firmware should assume this pinout by default:
 
-| Signal | ESP32-S3 GPIO | INMP441-style Module Pin |
+| Signal | ESP32-S3 GPIO | ICS/INMP441-style Module Pin |
 | --- | ---: | --- |
 | I2S bit clock | GPIO4 | `SCK` / `BCLK` |
 | I2S word select | GPIO5 | `WS` / `LRCLK` |
 | I2S data input | GPIO6 | `SD` / `DOUT` |
 | Microphone power | 3V3 | `VDD` / `3V` |
 | Ground | GND | `GND` |
-| Channel select | GND first | `L/R` |
+| Channel select | GND first | `SEL` / `L/R` |
 | USB D- | GPIO19 | Native USB connector |
 | USB D+ | GPIO20 | Native USB connector |
 
@@ -52,13 +56,16 @@ CONFIG_PHONEMEFREE_UNPLUGGED_I2S_PORT=I2S_NUM_0
 The reference build assumes:
 
 - the ESP32-S3 board exposes GPIO4, GPIO5, and GPIO6;
+- the ESP32-S3 board exposes at least one additional safe GPIO for the physical configuration button;
 - the ESP32-S3 board routes native USB to GPIO19/GPIO20;
 - the USB cable has data lines;
-- the INMP441 breakout accepts 3.3 V logic and power;
+- the ICS-43434 breakout accepts 3.3 V logic and power;
 - microphone I2S wiring is short;
 - no external power supply is used during the first MVP bring-up.
 
 If any of these assumptions fail, the build is no longer the v0.1 reference build.
+
+Prefer a full ICS-43434 breakout with local decoupling/filtering for breadboard and perfboard work. Minimal daughterboards can work, but the main board wiring then needs better 3.3 V decoupling and shorter power/ground return paths.
 
 ## 4. Accepted Substitutions
 
@@ -71,6 +78,8 @@ Substitutions are allowed for builders, but firmware development should stay on 
 | Waveshare ESP32-S3-Tiny N8R8 | Possible alternate | Good compact candidate, but mechanically different from the public default. |
 | Generic ESP32-S3 SuperMini | Experimental | Accept only with clear pinout and confirmed real ESP32-S3 chip. |
 | Bare ESP32-S3-WROOM module | Future PCB only | Not the public MVP assembly path. |
+| INMP441 I2S microphone module | Supported fallback | Common, cheap, and useful for bring-up, but no longer the official preferred microphone. |
+| MSM261S4030H0 I2S microphone module | Budget fallback pending validation | Needs bench validation and part-number cleanup before becoming officially recommended. |
 | PDM microphone | Not v0.1 | Requires firmware and PRD changes. |
 | Analog microphone module | Not supported | Requires ADC/codec path and violates the current architecture. |
 
@@ -93,9 +102,12 @@ The first firmware implementation should support:
 
 - ESP32-S3 target through ESP-IDF;
 - the fixed I2S pinout above;
-- INMP441-style 24-bit I2S capture in 32-bit frames;
+- ICS-43434/INMP441-style 24-bit I2S capture in 32-bit frames;
 - USB Audio Class 1.0 microphone output;
-- Wi-Fi AP configuration portal;
+- radio-silent-by-default Wi-Fi configuration portal;
+- WPA2 configuration AP started only from a physical maintenance button;
+- AP inactivity timeout of 2 minutes without client/heartbeat;
+- AP hard cap of 10 minutes even if a client stays connected;
 - bypass, noise, and pitch controls.
 
 The first firmware implementation should not spend time on:
@@ -129,12 +141,16 @@ For v0.1, the existing conceptual schematic and wiring diagrams are enough.
 The reference build is accepted when:
 
 - ESP32-S3 board flashes and boots reliably.
-- INMP441 is wired on GPIO4/5/6.
+- ICS-43434 is wired on GPIO4/5/6.
+- The physical configuration button is wired to a safe spare GPIO, not GPIO19/20, not GPIO4/5/6, and not a risky boot strap.
 - USB native port connects to the host.
 - Firmware can see microphone samples.
 - Firmware can enumerate as a USB microphone.
 - Audio reaches the host in bypass mode.
 - Noise and pitch controls audibly affect the signal.
+- Wi-Fi radio is off by default after boot.
+- WPA2 configuration AP only appears after the physical maintenance button is pressed.
+- AP stops after 2 minutes without client/heartbeat and always stops after 10 minutes.
 - The build runs for at least 10 minutes without crash, watchdog, or USB disconnect.
 
 ## 9. Related Docs

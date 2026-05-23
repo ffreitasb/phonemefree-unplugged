@@ -2,7 +2,8 @@ flowchart LR
     HOST["USB host<br/>PC / phone / tablet"]
     USB["USB data cable<br/>native ESP32-S3 USB"]
     MCU["ESP32-S3 dev board<br/>WROOM / XIAO / compact S3"]
-    MIC["I2S MEMS microphone<br/>INMP441 module"]
+    MIC["I2S MEMS microphone<br/>ICS-43434 primary<br/>INMP441 fallback"]
+    BTN["Config button<br/>safe spare GPIO TBD"]
 
     HOST <--> USB
     USB <--> MCU
@@ -12,7 +13,8 @@ flowchart LR
     MCU -- "GPIO4 / I2S BCLK" --> MIC
     MCU -- "GPIO5 / I2S WS" --> MIC
     MIC -- "SD / DOUT -> GPIO6" --> MCU
-    MCU -- "GND or 3V3<br/>L/R select" --> MIC
+    MCU -- "GND or 3V3<br/>SEL / L/R select" --> MIC
+    BTN --> MCU
 
-    note1["Keep BCLK / WS / DATA short.<br/>Do not use GPIO19/20 for the microphone.<br/>GPIO19/20 are native USB D-/D+."]
+    note1["Keep BCLK / WS / DATA short.<br/>Do not use GPIO19/20 for the microphone or config button.<br/>GPIO19/20 are native USB D-/D+."]
     note1 -.-> MCU

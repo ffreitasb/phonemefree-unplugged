@@ -13,7 +13,9 @@ For the MVP, buy:
 | Qty | Part | Recommended Search Term |
 | ---: | --- | --- |
 | 1 | ESP32-S3 development board with native USB | `ESP32-S3 WROOM N16R8 USB C development board` |
-| 1 | I2S MEMS microphone module | `INMP441 I2S microphone module ESP32` |
+| 1 | I2S MEMS microphone module | `ICS-43434 I2S microphone breakout` |
+| 1 optional | Fallback I2S MEMS microphone module | `INMP441 I2S microphone module ESP32` |
+| 1 | Physical configuration button | `6x6 tactile push button` |
 | 1 | USB data cable | `USB C data cable short` |
 | 1 | Breadboard or double-sided perfboard | `double side prototype PCB 2.54mm` |
 | 1 set | Dupont wires or solder wire | `dupont jumper wire female female` / `30AWG wire wrap wire` |
@@ -23,7 +25,8 @@ Recommended public MVP combination:
 
 ```text
 ESP32-S3-WROOM-1 N8R8/N16R8 USB-C dev board
-+ INMP441 I2S microphone breakout
++ ICS-43434 I2S microphone breakout
++ tactile button for temporary configuration AP
 + short USB data cable
 + double-sided 2.54 mm perfboard once breadboard proof works
 ```
@@ -39,6 +42,7 @@ Required:
 - USB-C or Micro-USB with data lines, not power-only.
 - At least 4 MB flash.
 - GPIO access for the I2S microphone.
+- One spare GPIO for the physical configuration button.
 - 3.3 V output pin for the microphone.
 
 Strongly recommended:
@@ -47,6 +51,7 @@ Strongly recommended:
 - PSRAM, preferably 8 MB.
 - Clearly documented pinout.
 - Exposed GPIO4, GPIO5, and GPIO6, because these are the default firmware pins.
+- Exposed spare GPIO that is not native USB, not I2S, and not a risky boot strap.
 - BOOT and RESET buttons.
 
 ## 3. ESP32-S3 Board Options
@@ -213,39 +218,9 @@ Do not buy for this project:
 
 ## 6. Microphone Options
 
-### Option A - INMP441 I2S module
+### Option A - ICS-43434 I2S breakout
 
-Best public MVP choice.
-
-Search on AliExpress:
-
-- `INMP441 I2S microphone module ESP32`
-- `INMP441 MEMS microphone I2S`
-- `INMP441 omnidirectional microphone module`
-
-Why it is recommended:
-
-- Very common on AliExpress.
-- Cheap.
-- Already aligned with the PRD.
-- 24-bit I2S output.
-- Plenty of ESP32 examples exist.
-
-What to check in listing photos:
-
-- Pins labeled `SCK`, `WS`, `SD`, `L/R`, `GND`, `VDD`.
-- 3.3 V support.
-- Prefer modules with header pins included or clearly solderable pads.
-
-Verdict:
-
-```text
-Recommended for v0.1 public build.
-```
-
-### Option B - ICS-43434 I2S breakout
-
-Better audio part, less common on AliExpress.
+Official v0.1 microphone target.
 
 Search on AliExpress:
 
@@ -253,22 +228,56 @@ Search on AliExpress:
 - `ICS43434 I2S microphone module`
 - `Adafruit ICS-43434 I2S microphone`
 
-Why it is attractive:
+Why it is recommended:
 
 - 24-bit I2S microphone.
 - Better published SNR than INMP441.
-- Good candidate for a higher-quality revision.
+- Strong official target for voice capture quality.
+- Very small price delta when a proper breakout is available.
+- Compatible with the existing `I2S -> DSP -> USB` architecture.
 
-Caveats:
+What to check in listing photos:
 
-- AliExpress often has fewer breakout options.
-- Some listings may sell only the bare MEMS chip, not a module.
-- Bare chips are not beginner-friendly.
+- Pins labeled `SCK`/`BCLK`, `WS`/`LRCLK`, `SD`/`DOUT`, `SEL`/`L/R`, `GND`, `VDD`.
+- 3.3 V support.
+- Prefer modules with header pins included or clearly solderable pads.
+- Prefer full breakouts with local decoupling/filtering around the microphone.
+- Avoid bare MEMS chips unless you are making a PCB.
 
 Verdict:
 
 ```text
-Good upgrade if found as a proper breakout.
+Recommended for v0.1 public build.
+```
+
+### Option B - INMP441 I2S module
+
+Common fallback.
+
+Search on AliExpress:
+
+- `INMP441 I2S microphone module ESP32`
+- `INMP441 MEMS microphone I2S`
+- `INMP441 omnidirectional microphone module`
+
+Why it remains useful:
+
+- Very common on AliExpress.
+- Cheap.
+- 24-bit I2S microphone.
+- Plenty of ESP32 examples exist.
+- Useful for fallback bring-up and comparison testing.
+
+Caveats:
+
+- Lower published SNR than ICS-43434.
+- More sensitive to board/module quality and supply noise than the preferred target.
+- Fallback status means performance caveats must be measured before declaring acceptance.
+
+Verdict:
+
+```text
+Supported fallback if ICS-43434 is unavailable.
 ```
 
 ### Option C - SPH0645LM4H-B I2S breakout
@@ -293,7 +302,7 @@ Caveats:
 Verdict:
 
 ```text
-Acceptable if INMP441 is unavailable, but not the first recommendation.
+Acceptable if ICS-43434 and INMP441 are unavailable, but not the first recommendation.
 ```
 
 ### Option D - MSM261S4030H0 I2S module
@@ -352,14 +361,14 @@ Future premium PCB candidate, not MVP public BoM.
 
 Default firmware pinout:
 
-| ESP32-S3 Signal | Default GPIO | INMP441-style Mic Pin |
+| ESP32-S3 Signal | Default GPIO | ICS/INMP441-style Mic Pin |
 | --- | ---: | --- |
 | I2S BCLK | GPIO4 | `SCK` / `BCLK` |
 | I2S WS | GPIO5 | `WS` / `LRCLK` |
 | I2S DATA IN | GPIO6 | `SD` / `DOUT` |
 | 3.3 V | 3V3 | `VDD` |
 | Ground | GND | `GND` |
-| Left/right select | GND initially | `L/R` |
+| Left/right select | GND initially | `SEL` / `L/R` |
 
 If using XIAO ESP32S3:
 
@@ -378,6 +387,7 @@ Notes:
 - Start with `L/R` tied to GND.
 - If audio is silent, test tying `L/R` to 3V3 and/or switch channel selection in firmware.
 - Do not use GPIO19/GPIO20 for the microphone; those are for native USB.
+- The physical configuration button uses a separate spare GPIO wired to GND, with firmware/internal pull-up expected. It must not use GPIO19/20, GPIO4/5/6, or a risky boot strap. The exact default GPIO is still TBD until the reference board is validated.
 
 ## 8. Breadboard Build
 
@@ -403,7 +413,9 @@ Minimal breadboard BoM:
 | Qty | Item | Search Term |
 | ---: | --- | --- |
 | 1 | ESP32-S3 board | `ESP32-S3 WROOM N16R8 USB C` |
-| 1 | I2S mic module | `INMP441 I2S microphone module` |
+| 1 | I2S mic module | `ICS-43434 I2S microphone breakout` |
+| 1 optional | Fallback I2S mic module | `INMP441 I2S microphone module` |
+| 1 | Physical configuration button | `6x6 tactile push button` |
 | 1 | Breadboard | `solderless breadboard 400 tie points` |
 | 1 set | Jumpers | `dupont jumper wire female male` |
 | 1 | USB data cable | `USB C data cable short` |
@@ -435,7 +447,8 @@ Perfboard BoM:
 | ---: | --- | --- |
 | 1 | Double-sided plated-through perfboard | 5x7 cm or smaller is enough |
 | 1 | ESP32-S3 board | Full-size or compact |
-| 1 | I2S mic module | Prefer INMP441 first |
+| 1 | I2S mic module | Prefer ICS-43434 first; INMP441 is fallback |
+| 1 | Physical configuration button | Small tactile button for temporary AP window |
 | 2 | Female header strips | Socket the ESP32-S3 board if possible |
 | 1 | Small female/header strip for mic | Lets the mic be replaced |
 | 1 set | 30 AWG wire or short solid-core wire | For underside wiring |
@@ -485,7 +498,9 @@ The clean public recommendation is:
 | Qty | Item | Public Recommendation |
 | ---: | --- | --- |
 | 1 | MCU board | ESP32-S3-WROOM-1 N8R8/N16R8 USB-C dev board |
-| 1 | Microphone | INMP441 I2S microphone module |
+| 1 | Microphone | ICS-43434 I2S microphone breakout |
+| 1 optional | Fallback microphone | INMP441 I2S microphone module |
+| 1 | Physical configuration button | Small tactile button |
 | 1 | USB cable | Short USB data cable |
 | 1 | Prototype base | Breadboard first, then double-sided perfboard |
 | 1 set | Wiring | Short Dupont jumpers or 30 AWG solder wire |
@@ -497,7 +512,9 @@ Compact public recommendation:
 | Qty | Item | Public Recommendation |
 | ---: | --- | --- |
 | 1 | MCU board | Seeed Studio XIAO ESP32S3 |
-| 1 | Microphone | INMP441 I2S microphone module |
+| 1 | Microphone | ICS-43434 I2S microphone breakout |
+| 1 optional | Fallback microphone | INMP441 I2S microphone module |
+| 1 | Physical configuration button | Small tactile button |
 | 1 | Prototype base | Double-sided perfboard |
 | 1 set | Wiring | Short soldered wires |
 | 1 | USB cable | Short USB-C data cable |
@@ -533,4 +550,5 @@ AliExpress catalog search links:
 - INMP441 I2S microphone module: https://www.aliexpress.com/w/wholesale-INMP441-I2S-microphone-module.html
 - ICS-43434 I2S microphone: https://www.aliexpress.com/w/wholesale-ICS%252d43434-I2S-microphone.html
 - SPH0645 I2S microphone: https://www.aliexpress.com/w/wholesale-SPH0645-I2S-microphone.html
+- 6x6 tactile push button: https://www.aliexpress.com/w/wholesale-6x6-tactile-push-button.html
 - Double-sided perfboard 2.54 mm: https://www.aliexpress.com/w/wholesale-double-sided-perfboard-2.54mm.html
