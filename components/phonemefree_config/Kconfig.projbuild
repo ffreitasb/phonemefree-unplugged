@@ -27,8 +27,8 @@ menu "PhonemeFree Unplugged"
 
     config PHONEMEFREE_UNPLUGGED_DSP_OUTPUT_SAMPLES
         int "DSP output ring buffer samples"
-        default 64
-        range 16 1024
+        default 512
+        range 64 4096
 
     config PHONEMEFREE_UNPLUGGED_DSP_TASK_STACK_SIZE
         int "DSP task stack size"
@@ -54,6 +54,24 @@ menu "PhonemeFree Unplugged"
         int "Webserver task stack size"
         default 6144
         range 4096 32768
+
+    config PHONEMEFREE_UNPLUGGED_BRINGUP_MODE
+        bool "Enable hardware bring-up mode"
+        default n
+        help
+            Hardware bring-up mode keeps serial logs available by not
+            installing USB Audio or starting the Wi-Fi portal.
+
+    config PHONEMEFREE_UNPLUGGED_BRINGUP_LOG_ENABLE
+        bool "Enable serial bring-up diagnostics"
+        default y if PHONEMEFREE_UNPLUGGED_BRINGUP_MODE
+        default n
+
+    config PHONEMEFREE_UNPLUGGED_BRINGUP_LOG_PERIOD_MS
+        int "Serial bring-up diagnostics period in ms"
+        default 1000
+        range 250 10000
+        depends on PHONEMEFREE_UNPLUGGED_BRINGUP_LOG_ENABLE
 
     config PHONEMEFREE_UNPLUGGED_FORMANT_ENABLE
         bool "Enable experimental formant shift"

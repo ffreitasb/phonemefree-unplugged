@@ -1,5 +1,6 @@
 #include "hal_i2s.h"
 
+#include <limits.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -33,10 +34,110 @@ static atomic_uint s_samples_captured;
 static atomic_uint s_ringbuf_drops;
 static atomic_uint s_read_timeouts;
 static atomic_uint s_read_errors;
+static atomic_int s_last_min_sample;
+static atomic_int s_last_max_sample;
+static atomic_uint s_last_peak_abs;
+
+typedef struct {
+    uint32_t sample_count;
+    int64_t sample_sum;
+    uint64_t sample_square_sum;
+    int16_t min_sample;
+    int16_t max_sample;
+    uint16_t peak_abs;
+} level_accumulator_t;
+
+static portMUX_TYPE s_level_stats_mux = portMUX_INITIALIZER_UNLOCKED;
+static level_accumulator_t s_level_window = {
+    .min_sample = INT16_MAX,
+    .max_sample = INT16_MIN,
+};
 
 static inline int16_t inmp441_frame_to_pcm16(int32_t frame)
 {
     return (int16_t)(frame >> 16);
+}
+
+static void reset_level_accumulator(level_accumulator_t *accumulator)
+{
+    accumulator->sample_count = 0;
+    accumulator->sample_sum = 0;
+    accumulator->sample_square_sum = 0;
+    accumulator->min_sample = INT16_MAX;
+    accumulator->max_sample = INT16_MIN;
+    accumulator->peak_abs = 0;
+}
+
+static uint64_t integer_sqrt_u64(uint64_t value)
+{
+    uint64_t result = 0;
+    uint64_t bit = 1ULL << 62;
+
+    while (bit > value) {
+        bit >>= 2;
+    }
+
+    while (bit != 0) {
+        if (value >= result + bit) {
+            value -= result + bit;
+            result = (result >> 1) + bit;
+        } else {
+            result >>= 1;
+        }
+        bit >>= 2;
+    }
+
+    return result;
+}
+
+static void update_level_stats(const int16_t *samples, size_t sample_count)
+{
+    int16_t min_sample = INT16_MAX;
+    int16_t max_sample = INT16_MIN;
+    uint16_t peak_abs = 0;
+    int64_t sample_sum = 0;
+    uint64_t sample_square_sum = 0;
+
+    for (size_t i = 0; i < sample_count; ++i) {
+        const int16_t sample = samples[i];
+        const int32_t sample_32 = (int32_t)sample;
+
+        sample_sum += sample_32;
+        sample_square_sum += (uint64_t)(sample_32 * sample_32);
+
+        if (sample < min_sample) {
+            min_sample = sample;
+        }
+        if (sample > max_sample) {
+            max_sample = sample;
+        }
+
+        const uint16_t abs_sample = sample == INT16_MIN
+                                        ? (uint16_t)INT16_MAX + 1U
+                                        : (uint16_t)(sample < 0 ? -sample : sample);
+        if (abs_sample > peak_abs) {
+            peak_abs = abs_sample;
+        }
+    }
+
+    atomic_store(&s_last_min_sample, (int)min_sample);
+    atomic_store(&s_last_max_sample, (int)max_sample);
+    atomic_store(&s_last_peak_abs, (unsigned int)peak_abs);
+
+    portENTER_CRITICAL(&s_level_stats_mux);
+    s_level_window.sample_count += (uint32_t)sample_count;
+    s_level_window.sample_sum += sample_sum;
+    s_level_window.sample_square_sum += sample_square_sum;
+    if (min_sample < s_level_window.min_sample) {
+        s_level_window.min_sample = min_sample;
+    }
+    if (max_sample > s_level_window.max_sample) {
+        s_level_window.max_sample = max_sample;
+    }
+    if (peak_abs > s_level_window.peak_abs) {
+        s_level_window.peak_abs = peak_abs;
+    }
+    portEXIT_CRITICAL(&s_level_stats_mux);
 }
 
 static void hal_i2s_capture_task(void *arg)
@@ -73,6 +174,7 @@ static void hal_i2s_capture_task(void *arg)
         for (size_t i = 0; i < frame_count; ++i) {
             pcm_samples[i] = inmp441_frame_to_pcm16(raw_frames[i]);
         }
+        update_level_stats(pcm_samples, frame_count);
 
         const size_t pcm_bytes = frame_count * sizeof(pcm_samples[0]);
         if (xRingbufferSend(s_input_ringbuf, pcm_samples, pcm_bytes, 0) != pdTRUE) {
@@ -215,4 +317,35 @@ void hal_i2s_get_stats(hal_i2s_stats_t *stats)
     stats->ringbuf_drops = atomic_load(&s_ringbuf_drops);
     stats->read_timeouts = atomic_load(&s_read_timeouts);
     stats->read_errors = atomic_load(&s_read_errors);
+    stats->last_min_sample = (int16_t)atomic_load(&s_last_min_sample);
+    stats->last_max_sample = (int16_t)atomic_load(&s_last_max_sample);
+    stats->last_peak_abs = (uint16_t)atomic_load(&s_last_peak_abs);
+}
+
+void hal_i2s_get_and_reset_level_stats(hal_i2s_level_stats_t *stats)
+{
+    if (!stats) {
+        return;
+    }
+
+    level_accumulator_t snapshot;
+
+    portENTER_CRITICAL(&s_level_stats_mux);
+    snapshot = s_level_window;
+    reset_level_accumulator(&s_level_window);
+    portEXIT_CRITICAL(&s_level_stats_mux);
+
+    if (snapshot.sample_count == 0) {
+        *stats = (hal_i2s_level_stats_t){0};
+        return;
+    }
+
+    const uint64_t mean_square = snapshot.sample_square_sum / snapshot.sample_count;
+
+    stats->sample_count = snapshot.sample_count;
+    stats->min_sample = snapshot.min_sample;
+    stats->max_sample = snapshot.max_sample;
+    stats->peak_abs = snapshot.peak_abs;
+    stats->mean_sample = (int32_t)(snapshot.sample_sum / snapshot.sample_count);
+    stats->rms = (uint32_t)integer_sqrt_u64(mean_square);
 }

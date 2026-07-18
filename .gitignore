@@ -8,7 +8,14 @@ internal/
 
 # ESP-IDF local build output
 build/
+build-*/
 sdkconfig
 sdkconfig.old
 managed_components/
 eim_config.toml
+
+# Local tool/session state
+.claude-flow/
+
+# Local bench recordings
+Gravando*.m4a

@@ -1,0 +1,8 @@
+# PhonemeFree Unplugged hardware bring-up profile
+#
+# Use this profile for early bench tests where USB Audio descriptor issues
+# would otherwise hide serial logs from the ESP32-S3 native USB port.
+
+CONFIG_PHONEMEFREE_UNPLUGGED_BRINGUP_MODE=y
+CONFIG_PHONEMEFREE_UNPLUGGED_BRINGUP_LOG_ENABLE=y
+CONFIG_PHONEMEFREE_UNPLUGGED_BRINGUP_LOG_PERIOD_MS=1000
